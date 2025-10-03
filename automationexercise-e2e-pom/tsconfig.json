@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "outDir": "../automationexercise-e2e-pom/dist",
+    "rootDir": "../automationexercise-e2e-pom",
+    "baseUrl": "../automationexercise-e2e-pom",
+    "paths": {
+      "*": ["../automationexercise-e2e-pom/node_modules/*"]
+    }
+  },
+  "include": [
+    "../automationexercise-e2e-pom/**/*.ts"
+  ],
+  "exclude": [
+    "../automationexercise-e2e-pom/node_modules",
+    "../automationexercise-e2e-pom/dist",
+    "../automationexercise-e2e-pom/test-reports"
+  ]
+}

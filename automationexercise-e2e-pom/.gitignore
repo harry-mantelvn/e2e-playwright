@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Test results
+test-results/
+test-reports/
+single-file-reports/
+
+# Playwright browsers
+.playwright/
+
+# Environment files (keep templates, ignore actual configs if needed)
+# .env.*
+
+# TypeScript build
+dist/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Storage state (contains auth tokens)
+storage-state/storageState.json
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

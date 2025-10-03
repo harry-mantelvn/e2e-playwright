@@ -1,0 +1,27 @@
+{
+  "name": "automationexercise-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:browsers": "npx playwright install --with-deps",
+    "test:headed": "cross-env NODE_ENV=test npx playwright test --headed",
+    "test:smoke": "cross-env NODE_ENV=test npx playwright test tests/smoke --reporter=line",
+    "test:regression": "cross-env NODE_ENV=prerelease npx playwright test tests/regression --reporter=line",
+    "report:html": "npx playwright show-report",
+    "allure:clean": "rimraf test-reports/allure-results single-file-reports",
+    "allure:generate": "npx allure generate --single-file -c ./test-reports/allure-results --clean -o single-file-reports",
+    "allure:serve": "npx allure serve test-reports/allure-results",
+    "auth:setup": "cross-env NODE_ENV=test npx playwright test helper/authentication-setup.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "allure-playwright": "^2.14.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.55.1"
+  }
+}
