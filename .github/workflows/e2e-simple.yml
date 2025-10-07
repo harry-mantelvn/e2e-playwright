@@ -12,7 +12,7 @@ on:
           - test
           - prerelease
       test_scope:
-        description: 'Testing Scope'
+        description: 'Test Scope'
         required: true
         default: 'all'
         type: choice
@@ -44,6 +44,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ./automationexercise-e2e-pom
     
     steps:
       - name: Checkout code
@@ -54,6 +57,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: automationexercise-e2e-pom/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -88,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-${{ github.event.inputs.environment }}-${{ github.run_number }}
-          path: single-file-reports/
+          path: automationexercise-e2e-pom/single-file-reports/
           retention-days: 30
 
       - name: Upload Test Results
@@ -97,8 +101,8 @@ jobs:
         with:
           name: test-results-${{ github.event.inputs.environment }}-${{ github.run_number }}
           path: |
-            test-results/
-            test-reports/
+            automationexercise-e2e-pom/test-results/
+            automationexercise-e2e-pom/test-reports/
           retention-days: 30
 
       - name: Test Summary

@@ -49,6 +49,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ./automationexercise-e2e-pom
     
     steps:
       - name: Checkout code
@@ -59,6 +62,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: automationexercise-e2e-pom/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -98,8 +102,7 @@ jobs:
 
       - name: Generate Allure Report
         if: always()
-        run: |
-          npm run allure:generate
+        run: npm run allure:generate
           
       - name: Create test summary
         if: always()
@@ -122,7 +125,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-${{ github.event.inputs.environment }}-${{ github.run_number }}
-          path: single-file-reports/
+          path: automationexercise-e2e-pom/single-file-reports/
           retention-days: 30
 
       - name: Upload Test Results
@@ -131,9 +134,9 @@ jobs:
         with:
           name: test-results-${{ github.event.inputs.environment }}-${{ github.run_number }}
           path: |
-            test-results/
-            test-reports/
-            test-summary.md
+            automationexercise-e2e-pom/test-results/
+            automationexercise-e2e-pom/test-reports/
+            automationexercise-e2e-pom/test-summary.md
           retention-days: 30
 
       - name: Send Email Report
@@ -168,7 +171,7 @@ jobs:
             <p>Detailed test results and Allure report are available in the GitHub Actions artifacts.</p>
             
             <p><em>This is an automated email from GitHub Actions.</em></p>
-          attachments: single-file-reports/index.html
+          attachments: automationexercise-e2e-pom/single-file-reports/index.html
 
       - name: Comment PR (if triggered from PR)
         if: ${{ always() && github.event_name == 'pull_request' }}
@@ -178,8 +181,8 @@ jobs:
             const fs = require('fs');
             let summary = '## 🧪 E2E Test Results\n\n';
             
-            if (fs.existsSync('test-summary.md')) {
-              summary += fs.readFileSync('test-summary.md', 'utf8');
+            if (fs.existsSync('automationexercise-e2e-pom/test-summary.md')) {
+              summary += fs.readFileSync('automationexercise-e2e-pom/test-summary.md', 'utf8');
             }
             
             summary += `\n\n📁 **Artifacts:**\n`;
