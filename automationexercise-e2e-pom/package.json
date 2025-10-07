@@ -4,11 +4,13 @@
   "version": "1.0.0",
   "scripts": {
     "install:browsers": "npx playwright install --with-deps",
-    "test:headed": "cross-env NODE_ENV=test npx playwright test --headed",
-    "test:smoke": "cross-env NODE_ENV=test npx playwright test tests/smoke --reporter=line",
-    "test:regression": "cross-env NODE_ENV=prerelease npx playwright test tests/regression --reporter=line",
+    "clean": "node clean-reports.js",
+    "test:headed": "npm run clean && cross-env NODE_ENV=test npx playwright test --headed",
+    "test:smoke": "npm run clean && cross-env NODE_ENV=test npx playwright test tests/smoke && npm run allure:generate",
+    "test:regression": "npm run clean && cross-env NODE_ENV=prerelease npx playwright test tests/regression && npm run allure:generate",
+    "test:all": "npm run clean && cross-env NODE_ENV=test npx playwright test && npm run allure:generate",
     "report:html": "npx playwright show-report",
-    "allure:clean": "rimraf test-reports/allure-results single-file-reports",
+    "allure:clean": "npm run clean",
     "allure:generate": "npx allure generate --single-file -c ./test-reports/allure-results --clean -o single-file-reports",
     "allure:serve": "npx allure serve test-reports/allure-results",
     "auth:setup": "cross-env NODE_ENV=test npx playwright test helper/authentication-setup.ts"

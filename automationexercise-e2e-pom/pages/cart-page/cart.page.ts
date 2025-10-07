@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
-import { BasePage } from '../base-page.js';
-import { HeaderComponent } from '../common/header.component.js';
+import { BasePage } from '../base-page';
+import { HeaderComponent } from '../common/header.component';
 
 export class CartPage extends BasePage {
   public readonly header: HeaderComponent;

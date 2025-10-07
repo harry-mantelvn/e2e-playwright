@@ -11,9 +11,13 @@ const config: PlaywrightTestConfig = {
   expect: { timeout: 10_000 },
   retries: 0,
   reporter: [
-    ['html', { open: 'never', outputFolder: './test-reports/html' }],
     ['line'],
-    ['allure-playwright', { outputFolder: './test-reports/allure-results', detail: true }]
+    ['html', { open: 'never', outputFolder: './test-reports/html' }],
+    ['allure-playwright', { 
+      outputFolder: './test-reports/allure-results',
+      detail: true,
+      suiteTitle: false
+    }]
   ],
   use: {
     baseURL: process.env.BASE_URL,

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { PageFactory, PageType } from '../../helper/page-factory.js';
-import { AuthPage } from '../../pages/auth-page/auth.page.js';
-import { TEST_USERS } from '../../data/test-data/test-data.js';
+import { PageFactory, PageType } from '../../helper/page-factory';
+import { AuthPage } from '../../pages/auth-page/auth.page';
+import { TEST_USERS } from '../../data/test-data/test-data';
 
 test.describe('Authentication Smoke Tests', () => {
   let authPage: AuthPage;

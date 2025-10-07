@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { PageFactory, PageType } from '../../../helper/page-factory.js';
-import { ContactPage } from '../../../pages/contact-page/contact.page.js';
-import { HomePage } from '../../../pages/home-page/home.page.js';
-import { TEST_CONTACT_FORMS } from '../../../data/test-data/test-data.js';
-import { TEST_CONSTANTS } from '../../../data/constants/test-constants.js';
+import { PageFactory, PageType } from '../../../helper/page-factory';
+import { ContactPage } from '../../../pages/contact-page/contact.page';
+import { HomePage } from '../../../pages/home-page/home.page';
+import { TEST_CONTACT_FORMS } from '../../../data/test-data/test-data';
+import { TEST_CONSTANTS } from '../../../data/constants/test-constants';
 
 test.describe('Contact Form Regression Tests', () => {
   let contactPage: ContactPage;
