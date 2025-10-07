@@ -30,13 +30,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    defaults:
-      run:
-        working-directory: ./automationexercise-e2e-pom
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Check project structure
+        run: |
+          echo "Repository structure:"
+          ls -la
+          echo "Project directory:"
+          ls -la automationexercise-e2e-pom/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,18 +50,22 @@ jobs:
           cache-dependency-path: 'automationexercise-e2e-pom/package-lock.json'
 
       - name: Install dependencies
+        working-directory: ./automationexercise-e2e-pom
         run: npm ci
 
       - name: Install Playwright browsers
+        working-directory: ./automationexercise-e2e-pom
         run: npx playwright install --with-deps
 
       - name: Install Allure CLI
         run: npm install -g allure-commandline
 
       - name: Clean reports
+        working-directory: ./automationexercise-e2e-pom
         run: npm run clean
 
       - name: Run tests based on scope
+        working-directory: ./automationexercise-e2e-pom
         run: |
           case "${{ github.event.inputs.test_scope }}" in
             "smoke")
@@ -74,6 +82,7 @@ jobs:
 
       - name: Generate Allure Report
         if: always()
+        working-directory: ./automationexercise-e2e-pom
         run: |
           if [ -d "test-reports/allure-results" ] && [ "$(ls -A test-reports/allure-results)" ]; then
             echo "Generating Allure report..."
@@ -103,11 +112,11 @@ jobs:
       - name: Test Summary
         if: always()
         run: |
-          echo "## 🧪 E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Scope:** ${{ github.event.inputs.test_scope }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Workers:** ${{ github.event.inputs.workers }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 **Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
+          echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
