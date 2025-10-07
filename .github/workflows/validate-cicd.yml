@@ -64,7 +64,7 @@ jobs:
         run: |
           echo "🧪 Running basic test..."
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=test npx playwright test tests/basic.spec.ts --workers=1
+          npx cross-env NODE_ENV=test npx playwright test tests/basic.spec.ts --workers=1
         continue-on-error: true
 
       - name: Run smoke tests
@@ -72,7 +72,7 @@ jobs:
         run: |
           echo "🧪 Running smoke tests..."
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=test npx playwright test tests/smoke/smoke-home.spec.ts --workers=1
+          npx cross-env NODE_ENV=test npx playwright test tests/smoke/smoke-home.spec.ts --workers=1
         continue-on-error: true
 
       - name: Validate reports generation
