@@ -46,27 +46,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'automationexercise-e2e-pom/package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./automationexercise-e2e-pom
-        run: npm ci
+        run: |
+          cd automationexercise-e2e-pom
+          npm ci
 
       - name: Install Playwright browsers
-        working-directory: ./automationexercise-e2e-pom
-        run: npx playwright install --with-deps
+        run: |
+          cd automationexercise-e2e-pom
+          npx playwright install --with-deps
 
       - name: Install Allure CLI
         run: npm install -g allure-commandline
 
       - name: Clean reports
-        working-directory: ./automationexercise-e2e-pom
-        run: npm run clean
+        run: |
+          cd automationexercise-e2e-pom
+          npm run clean
 
       - name: Run tests based on scope
-        working-directory: ./automationexercise-e2e-pom
         run: |
+          cd automationexercise-e2e-pom
           case "${{ github.event.inputs.test_scope }}" in
             "smoke")
               cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
@@ -82,8 +83,8 @@ jobs:
 
       - name: Generate Allure Report
         if: always()
-        working-directory: ./automationexercise-e2e-pom
         run: |
+          cd automationexercise-e2e-pom
           if [ -d "test-reports/allure-results" ] && [ "$(ls -A test-reports/allure-results)" ]; then
             echo "Generating Allure report..."
             allure generate test-reports/allure-results --clean -o allure-report

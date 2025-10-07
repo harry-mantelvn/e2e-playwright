@@ -32,47 +32,54 @@ jobs:
           echo ""
           echo "Package files:"
           ls -la automationexercise-e2e-pom/package*.json
+          echo ""
+          echo "Validating package-lock.json for cache:"
+          if [ -f "automationexercise-e2e-pom/package-lock.json" ]; then
+            echo "✅ package-lock.json found"
+            echo "File size: $(wc -c < automationexercise-e2e-pom/package-lock.json) bytes"
+          else
+            echo "❌ package-lock.json NOT found"
+            exit 1
+          fi
 
-      - name: Setup Node.js
+      - name: Setup Node.js (without cache first)
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'automationexercise-e2e-pom/package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./automationexercise-e2e-pom
         run: |
           echo "📦 Installing dependencies..."
+          cd automationexercise-e2e-pom
           npm ci
 
       - name: Validate Playwright installation
-        working-directory: ./automationexercise-e2e-pom
         run: |
           echo "🎭 Installing Playwright browsers..."
+          cd automationexercise-e2e-pom
           npx playwright install --with-deps
 
       - name: Run basic validation test
         if: ${{ github.event.inputs.test_scope == 'basic' }}
-        working-directory: ./automationexercise-e2e-pom
         run: |
           echo "🧪 Running basic test..."
+          cd automationexercise-e2e-pom
           cross-env NODE_ENV=test npx playwright test tests/basic.spec.ts --workers=1
         continue-on-error: true
 
       - name: Run smoke tests
         if: ${{ github.event.inputs.test_scope == 'smoke' }}
-        working-directory: ./automationexercise-e2e-pom
         run: |
           echo "🧪 Running smoke tests..."
+          cd automationexercise-e2e-pom
           cross-env NODE_ENV=test npx playwright test tests/smoke/smoke-home.spec.ts --workers=1
         continue-on-error: true
 
       - name: Validate reports generation
         if: always()
-        working-directory: ./automationexercise-e2e-pom
         run: |
           echo "📊 Checking test results..."
+          cd automationexercise-e2e-pom
           ls -la test-results/ || echo "No test-results directory"
           ls -la test-reports/ || echo "No test-reports directory"
           
