@@ -1,10 +1,10 @@
-name: E2E Tests (Basic)
+name: E2E Test Suite (Simple)
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Select Test Environment'
+        description: 'Test Environment'
         required: true
         default: 'test'
         type: choice
@@ -12,14 +12,28 @@ on:
           - test
           - prerelease
       test_scope:
-        description: 'Select Test Scope'
+        description: 'Test Scope'
         required: true
-        default: 'smoke'
+        default: 'all'
         type: choice
         options:
+          - all
           - smoke
           - regression
-          - basic
+          - specific
+      specific_spec:
+        description: 'Specific Test File (when scope is "specific")'
+        required: false
+        default: 'tests/basic.spec.ts'
+        type: choice
+        options:
+          - tests/basic.spec.ts
+          - tests/smoke/smoke-home.spec.ts
+          - tests/smoke/smoke-auth.spec.ts
+          - tests/smoke/smoke-cart.spec.ts
+          - tests/regression/auth/register-login-logout.spec.ts
+          - tests/regression/products/add-to-cart-and-checkout.spec.ts
+          - tests/regression/contact/submit-contact-form.spec.ts
       workers:
         description: 'Number of Workers'
         required: true
@@ -30,74 +44,55 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ./automationexercise-e2e-pom
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check project structure
-        run: |
-          echo "Repository structure:"
-          ls -la
-          echo "Project directory:"
-          ls -la automationexercise-e2e-pom/
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: automationexercise-e2e-pom/package-lock.json
 
       - name: Install dependencies
-        run: |
-          cd automationexercise-e2e-pom
-          npm ci
+        run: npm ci
 
       - name: Install Playwright browsers
-        run: |
-          cd automationexercise-e2e-pom
-          npx playwright install --with-deps
-
-      - name: Install Allure CLI
-        run: npm install -g allure-commandline
-
-      - name: Clean reports
-        run: |
-          cd automationexercise-e2e-pom
-          npm run clean
+        run: npx playwright install --with-deps
 
       - name: Run tests based on scope
         run: |
-          cd automationexercise-e2e-pom
           case "${{ github.event.inputs.test_scope }}" in
+            "all")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
+              ;;
             "smoke")
               cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
               ;;
             "regression")
               cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
               ;;
-            "basic")
-              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/basic.spec.ts --workers=${{ github.event.inputs.workers }}
+            "specific")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
               ;;
           esac
         continue-on-error: true
 
       - name: Generate Allure Report
         if: always()
-        run: |
-          cd automationexercise-e2e-pom
-          if [ -d "test-reports/allure-results" ] && [ "$(ls -A test-reports/allure-results)" ]; then
-            echo "Generating Allure report..."
-            allure generate test-reports/allure-results --clean -o allure-report
-          else
-            echo "No allure results found"
-          fi
+        run: npm run allure:generate
 
       - name: Upload Allure Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-${{ github.event.inputs.environment }}-${{ github.run_number }}
-          path: automationexercise-e2e-pom/allure-report/
+          path: automationexercise-e2e-pom/single-file-reports/
           retention-days: 30
 
       - name: Upload Test Results

@@ -15,18 +15,15 @@ export class StorageHelper {
     }
 
     await context.storageState({ path: storageStatePath });
-    console.log(`Storage state saved to: ${storageStatePath}`);
   }
 
   static async loadStorageState(): Promise<string | undefined> {
     const storageStatePath = path.resolve(this.STORAGE_STATE_PATH);
     
     if (fs.existsSync(storageStatePath)) {
-      console.log(`Loading storage state from: ${storageStatePath}`);
       return storageStatePath;
     }
     
-    console.log('No storage state file found, starting fresh session');
     return undefined;
   }
 
@@ -35,7 +32,6 @@ export class StorageHelper {
     
     if (fs.existsSync(storageStatePath)) {
       fs.unlinkSync(storageStatePath);
-      console.log('Storage state cleared');
     }
   }
 
@@ -53,7 +49,6 @@ export class StorageHelper {
       // Check if there are any cookies (basic check for login state)
       return storageState.cookies && storageState.cookies.length > 0;
     } catch (error) {
-      console.log('Error reading storage state:', error);
       return false;
     }
   }

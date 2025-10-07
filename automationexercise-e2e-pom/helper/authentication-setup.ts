@@ -22,8 +22,6 @@ const TEST_USER = {
 };
 
 setup('authenticate and save storage state', async ({ page, context }) => {
-  console.log('Setting up authentication...');
-  
   // Initialize page factory
   PageFactory.initialize(page);
   
@@ -44,11 +42,9 @@ setup('authenticate and save storage state', async ({ page, context }) => {
     
     // If we're still on login page, user doesn't exist - register first
     if (page.url().includes('/login')) {
-      console.log('User does not exist, registering new user...');
       await registerNewUser(authPage);
     }
   } catch (error) {
-    console.log('Login form not found or login failed, attempting registration...');
     await registerNewUser(authPage);
   }
   
@@ -57,8 +53,6 @@ setup('authenticate and save storage state', async ({ page, context }) => {
   
   // Save the authentication state
   await StorageHelper.saveStorageState(context);
-  
-  console.log('Authentication setup completed successfully!');
 });
 
 async function registerNewUser(authPage: AuthPage) {

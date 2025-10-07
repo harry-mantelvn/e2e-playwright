@@ -3,8 +3,6 @@ import { StorageHelper } from './storage-helper.js';
 import ENV from './env-config.js';
 
 async function globalSetup(config: FullConfig) {
-  console.log('Starting global setup...');
-  
   // Create browser and context for setup
   const browser = await chromium.launch();
   const context = await browser.newContext();
@@ -13,7 +11,6 @@ async function globalSetup(config: FullConfig) {
   try {
     // Navigate to base URL to ensure site is accessible
     await page.goto(ENV.BASE_URL);
-    console.log(`Successfully connected to ${ENV.BASE_URL}`);
     
     // Clear any existing storage state
     await StorageHelper.clearStorageState();
@@ -21,7 +18,6 @@ async function globalSetup(config: FullConfig) {
     // Perform any other global setup tasks here
     // For example: database seeding, API setup, etc.
     
-    console.log('Global setup completed successfully');
   } catch (error) {
     console.error('Global setup failed:', error);
     throw error;

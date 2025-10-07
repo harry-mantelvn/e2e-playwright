@@ -2,7 +2,7 @@
 
 A comprehensive Playwright + TypeScript automation framework for testing [AutomationExercise.com](https://www.automationexercise.com) with enterprise-ready structure and best practices.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Language**: TypeScript
 - **Test Runner**: @playwright/test
@@ -12,7 +12,7 @@ A comprehensive Playwright + TypeScript automation framework for testing [Automa
 - **Environment Management**: dotenv + cross-env
 - **Authentication**: Persistent storage state
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 automationexercise-e2e/
@@ -73,7 +73,7 @@ automationexercise-e2e/
 └── tsconfig.json         # TypeScript configuration
 ```
 
-## 🛠️ Setup Instructions
+## Setup Instructions
 
 ### 1. Install Dependencies
 
@@ -93,7 +93,7 @@ npm run install:browsers
 npm run auth:setup
 ```
 
-## 🎯 Running Tests
+## Running Tests
 
 ### Smoke Tests
 ```bash
@@ -128,7 +128,7 @@ npm run allure:serve
 npm run allure:clean
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -149,7 +149,7 @@ Key configuration options in `playwright.config.ts`:
 - **Videos**: Retain on failure
 - **Traces**: On first retry
 
-## 📊 Test Strategy
+## Test Strategy
 
 ### Smoke Tests
 Quick validation of core functionality:
@@ -163,7 +163,7 @@ Comprehensive testing of user journeys:
 - Complete shopping cart to checkout process
 - Contact form submission with validation
 
-## 🔐 Authentication Strategy
+## Authentication Strategy
 
 The framework uses Playwright's storage state to persist authentication:
 
@@ -172,7 +172,7 @@ The framework uses Playwright's storage state to persist authentication:
 3. Tests automatically use stored authentication
 4. No need to login for each test execution
 
-## 🏗️ Architecture Highlights
+## Architecture Highlights
 
 ### Page Object Model + Factory Pattern
 - **Base Page**: Common functionality for all pages
@@ -194,7 +194,7 @@ The framework uses Playwright's storage state to persist authentication:
 - Screenshot and video capture on failures
 - Detailed Allure reporting with steps
 
-## 📈 Best Practices Implemented
+## Best Practices Implemented
 
 1. **No Magic Waits**: All waits are explicit and purposeful
 2. **Small Cohesive Methods**: Each method has a single responsibility
@@ -203,7 +203,7 @@ The framework uses Playwright's storage state to persist authentication:
 5. **Session Management**: Efficient authentication state handling
 6. **Comprehensive Reporting**: Multiple reporting formats for different needs
 
-## 🚦 CI/CD Ready
+## CI/CD Ready
 
 The framework is designed for CI/CD integration:
 
@@ -213,7 +213,7 @@ The framework is designed for CI/CD integration:
 - Parallel execution support
 - Docker-friendly setup
 
-## 🔍 Debugging
+## Debugging
 
 For debugging failed tests:
 
@@ -222,7 +222,7 @@ For debugging failed tests:
 3. Review video recordings for failed tests
 4. Use headed mode for live debugging: `npm run test:headed`
 
-## 📝 Adding New Tests
+## Adding New Tests
 
 1. Create page objects in appropriate `pages/` directory
 2. Add test data to `data/test-data/`
@@ -230,7 +230,7 @@ For debugging failed tests:
 4. Use Page Factory for page object creation
 5. Include appropriate test steps and assertions
 
-## 🤝 Contributing
+## Contributing
 
 1. Follow TypeScript and ESLint guidelines
 2. Maintain page object pattern consistency
@@ -239,4 +239,4 @@ For debugging failed tests:
 
 ---
 
-**Built with ❤️ using Playwright + TypeScript**
+**Built with care using Playwright + TypeScript**

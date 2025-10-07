@@ -231,7 +231,6 @@ test.describe('Contact Form Regression Tests', () => {
       const endTime = Date.now();
       
       const responseTime = endTime - startTime;
-      console.log(`Form submission took ${responseTime}ms`);
       
       // Basic performance assertion
       expect(responseTime).toBeLessThan(10000); // Should complete within 10 seconds

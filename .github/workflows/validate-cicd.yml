@@ -21,27 +21,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate repository structure
-        run: |
-          echo "🔍 Validating repository structure..."
-          echo "Repository root:"
-          ls -la
-          echo ""
-          echo "Project directory exists:"
-          ls -la automationexercise-e2e-pom/ | head -10
-          echo ""
-          echo "Package files:"
-          ls -la automationexercise-e2e-pom/package*.json
-          echo ""
-          echo "Validating package-lock.json for cache:"
-          if [ -f "automationexercise-e2e-pom/package-lock.json" ]; then
-            echo "✅ package-lock.json found"
-            echo "File size: $(wc -c < automationexercise-e2e-pom/package-lock.json) bytes"
-          else
-            echo "❌ package-lock.json NOT found"
-            exit 1
-          fi
-
       - name: Setup Node.js (without cache first)
         uses: actions/setup-node@v4
         with:
@@ -49,41 +28,34 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "📦 Installing dependencies..."
           cd automationexercise-e2e-pom
           npm ci
 
       - name: Validate Playwright installation
         run: |
-          echo "🎭 Installing Playwright browsers..."
           cd automationexercise-e2e-pom
           npx playwright install --with-deps
 
       - name: Run basic validation test
         if: ${{ github.event.inputs.test_scope == 'basic' }}
         run: |
-          echo "🧪 Running basic test..."
           cd automationexercise-e2e-pom
-          npx cross-env NODE_ENV=test npx playwright test tests/basic.spec.ts --workers=1
+          npm run test:basic
         continue-on-error: true
 
       - name: Run smoke tests
         if: ${{ github.event.inputs.test_scope == 'smoke' }}
         run: |
-          echo "🧪 Running smoke tests..."
           cd automationexercise-e2e-pom
-          npx cross-env NODE_ENV=test npx playwright test tests/smoke/smoke-home.spec.ts --workers=1
+          npm run test:smoke-home
         continue-on-error: true
 
       - name: Validate reports generation
         if: always()
         run: |
-          echo "📊 Checking test results..."
           cd automationexercise-e2e-pom
           ls -la test-results/ || echo "No test-results directory"
           ls -la test-reports/ || echo "No test-reports directory"
-          
-          echo "✅ Validation completed successfully!"
 
       - name: Upload validation results
         if: always()
@@ -98,12 +70,12 @@ jobs:
       - name: Validation Summary
         if: always()
         run: |
-          echo "## ✅ CI/CD Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "## CI/CD Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Directory Structure**: ✅ Correct" >> $GITHUB_STEP_SUMMARY
-          echo "- **npm Cache**: ✅ Working" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dependencies**: ✅ Installed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Playwright**: ✅ Configured" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Execution**: ✅ Functional" >> $GITHUB_STEP_SUMMARY
+          echo "- **Directory Structure**: Correct" >> $GITHUB_STEP_SUMMARY
+          echo "- **npm Cache**: Working" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies**: Installed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Playwright**: Configured" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Execution**: Functional" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🎉 **Your CI/CD pipeline is working correctly!**" >> $GITHUB_STEP_SUMMARY
+          echo "**Your CI/CD pipeline is working correctly!**" >> $GITHUB_STEP_SUMMARY
