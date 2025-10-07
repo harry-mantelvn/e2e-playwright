@@ -1,0 +1,181 @@
+name: E2E Automation Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select Test Environment'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - prerelease
+      test_scope:
+        description: 'Select Test Scope'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - smoke
+          - regression
+          - specific
+      specific_spec:
+        description: 'Specific Test File (when scope is "specific")'
+        required: false
+        default: 'tests/basic.spec.ts'
+        type: choice
+        options:
+          - tests/basic.spec.ts
+          - tests/smoke/smoke-home.spec.ts
+          - tests/smoke/smoke-auth.spec.ts
+          - tests/smoke/smoke-cart.spec.ts
+          - tests/regression/auth/register-login-logout.spec.ts
+          - tests/regression/products/add-to-cart-and-checkout.spec.ts
+          - tests/regression/contact/submit-contact-form.spec.ts
+      workers:
+        description: 'Number of Workers'
+        required: true
+        default: '3'
+        type: string
+      email_recipients:
+        description: 'Email Recipients (comma-separated)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ./automationexercise-e2e-pom
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check files
+        run: |
+          echo "Checking project structure..."
+          ls -la
+          ls -la automationexercise-e2e-pom/
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'automationexercise-e2e-pom/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline
+
+      - name: Clean reports
+        run: npm run clean
+
+      - name: Run tests based on scope
+        run: |
+          case "${{ github.event.inputs.test_scope }}" in
+            "all")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
+              ;;
+            "smoke")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
+              ;;
+            "regression")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
+              ;;
+            "specific")
+              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
+              ;;
+          esac
+        continue-on-error: true
+
+      - name: Generate Reports
+        if: always()
+        run: |
+          echo "Checking test reports..."
+          ls -la test-reports/ || echo "No test-reports directory"
+          ls -la test-results/ || echo "No test-results directory"
+          
+          # Generate Allure report if results exist
+          if [ -d "test-reports/allure-results" ] && [ "$(ls -A test-reports/allure-results)" ]; then
+            echo "Generating Allure report..."
+            allure generate test-reports/allure-results --clean -o allure-report
+          else
+            echo "No allure results found"
+          fi
+
+      - name: Upload Allure Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ github.event.inputs.environment }}-${{ github.run_number }}
+          path: automationexercise-e2e-pom/allure-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.event.inputs.environment }}-${{ github.run_number }}
+          path: |
+            automationexercise-e2e-pom/test-results/
+            automationexercise-e2e-pom/test-reports/
+          retention-days: 30
+
+      - name: Send Email Report
+        if: ${{ always() && github.event.inputs.email_recipients != '' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "E2E Test Report - ${{ github.event.inputs.environment }} - Run #${{ github.run_number }}"
+          to: ${{ github.event.inputs.email_recipients }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+          html_body: |
+            <h2>🧪 E2E Test Execution Report</h2>
+            
+            <h3>📋 Test Configuration</h3>
+            <ul>
+              <li><strong>Environment:</strong> ${{ github.event.inputs.environment }}</li>
+              <li><strong>Test Scope:</strong> ${{ github.event.inputs.test_scope }}</li>
+              <li><strong>Workers:</strong> ${{ github.event.inputs.workers }}</li>
+              <li><strong>Run Number:</strong> #${{ github.run_number }}</li>
+              <li><strong>Execution Time:</strong> ${{ github.event.repository.updated_at }}</li>
+            </ul>
+            
+            <h3>🔗 Quick Links</h3>
+            <ul>
+              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Full Execution Log</a></li>
+              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts">Download Test Reports</a></li>
+            </ul>
+            
+            <h3>📊 Results</h3>
+            <p>Test execution completed. Download detailed reports from the artifacts section.</p>
+            
+            <p><em>Automated report from GitHub Actions</em></p>
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 🧪 E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Scope:** ${{ github.event.inputs.test_scope }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers:** ${{ github.event.inputs.workers }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
