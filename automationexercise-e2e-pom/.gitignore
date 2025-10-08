@@ -30,8 +30,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Storage state (contains auth tokens)
-storage-state/storageState.json
 
 # Coverage reports
 coverage/
