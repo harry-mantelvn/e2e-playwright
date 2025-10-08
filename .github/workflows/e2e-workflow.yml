@@ -82,16 +82,16 @@ jobs:
           cd automationexercise-e2e-pom
           case "${{ github.event.inputs.test_scope }}" in
             "all")
-              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
+              npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
               ;;
             "smoke")
-              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
+              npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
               ;;
             "regression")
-              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
+              npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
               ;;
             "specific")
-              cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
+              npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
               ;;
           esac
         continue-on-error: true
@@ -136,12 +136,12 @@ jobs:
         with:
           server_address: smtp.gmail.com
           server_port: 587
-          secure: true
+          secure: false
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "E2E Test Report - ${{ github.event.inputs.environment }} - Run #${{ github.run_number }}"
           to: ${{ github.event.inputs.email_recipients }}
-          from: ${{ secrets.EMAIL_USERNAME }}
+          from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
           html_body: |
             <h2> E2E Test Execution Report</h2>
             

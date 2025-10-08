@@ -79,28 +79,28 @@ jobs:
         if: ${{ github.event.inputs.test_scope == 'all' }}
         run: |
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test --workers=${{ github.event.inputs.workers }}
         continue-on-error: true
 
       - name: Run smoke tests
         if: ${{ github.event.inputs.test_scope == 'smoke' }}
         run: |
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers }}
         continue-on-error: true
 
       - name: Run regression tests
         if: ${{ github.event.inputs.test_scope == 'regression' }}
         run: |
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers }}
         continue-on-error: true
 
       - name: Run specific test
         if: ${{ github.event.inputs.test_scope == 'specific' }}
         run: |
           cd automationexercise-e2e-pom
-          cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers }}
         continue-on-error: true
 
       - name: Generate Allure Report
@@ -151,9 +151,10 @@ jobs:
         with:
           server_address: smtp.gmail.com
           server_port: 587
+          secure: false
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "E2E Test Report - ${{ github.event.inputs.environment }} - ${{ github.run_number }}"
+          subject: "E2E Test Report - ${{ github.event.inputs.environment }} - Run #${{ github.run_number }}"
           to: ${{ github.event.inputs.email_recipients }}
           from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
           html_body: |

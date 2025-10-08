@@ -1,0 +1,207 @@
+name: E2E Test Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Test Environment'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - prerelease
+      test_scope:
+        description: 'Test Scope'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - smoke
+          - regression
+          - basic
+          - specific
+      specific_spec:
+        description: 'Specific Test File (when scope is "specific")'
+        required: false
+        default: 'tests/basic.spec.ts'
+        type: choice
+        options:
+          - tests/basic.spec.ts
+          - tests/smoke/smoke-home.spec.ts
+          - tests/smoke/smoke-auth.spec.ts
+          - tests/smoke/smoke-cart.spec.ts
+          - tests/regression/auth/register-login-logout.spec.ts
+          - tests/regression/products/add-to-cart-and-checkout.spec.ts
+          - tests/regression/contact/submit-contact-form.spec.ts
+      workers:
+        description: 'Number of Workers'
+        required: true
+        default: '3'
+        type: string
+      email_recipients:
+        description: 'Email Recipients (comma-separated, optional)'
+        required: false
+        type: string
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'automationexercise-e2e-pom/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'automationexercise-e2e-pom/**'
+  schedule:
+    # Run smoke tests daily at 6 AM UTC
+    - cron: '0 6 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: automationexercise-e2e-pom/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd automationexercise-e2e-pom
+          npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          cd automationexercise-e2e-pom
+          npx playwright install --with-deps
+
+      - name: Run all tests
+        if: ${{ github.event.inputs.test_scope == 'all' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment || 'test' }} npx playwright test --workers=${{ github.event.inputs.workers || '3' }}
+        continue-on-error: true
+
+      - name: Run smoke tests
+        if: ${{ github.event.inputs.test_scope == 'smoke' || github.event_name == 'schedule' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment || 'test' }} npx playwright test tests/smoke --workers=${{ github.event.inputs.workers || '3' }}
+        continue-on-error: true
+
+      - name: Run regression tests
+        if: ${{ github.event.inputs.test_scope == 'regression' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment || 'test' }} npx playwright test tests/regression --workers=${{ github.event.inputs.workers || '3' }}
+        continue-on-error: true
+
+      - name: Run basic test
+        if: ${{ github.event.inputs.test_scope == 'basic' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment || 'test' }} npx playwright test tests/basic.spec.ts --workers=${{ github.event.inputs.workers || '3' }}
+        continue-on-error: true
+
+      - name: Run specific test
+        if: ${{ github.event.inputs.test_scope == 'specific' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=${{ github.event.inputs.environment || 'test' }} npx playwright test ${{ github.event.inputs.specific_spec }} --workers=${{ github.event.inputs.workers || '3' }}
+        continue-on-error: true
+
+      - name: Run automatic tests on push/PR
+        if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+        run: |
+          cd automationexercise-e2e-pom
+          npx cross-env NODE_ENV=test npx playwright test tests/smoke --workers=3
+        continue-on-error: true
+
+      - name: Generate Allure Report
+        if: always()
+        run: |
+          cd automationexercise-e2e-pom
+          npm run allure:generate
+
+      - name: Upload Allure Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ github.event.inputs.environment || 'test' }}-${{ github.run_number }}
+          path: automationexercise-e2e-pom/single-file-reports/
+          retention-days: 30
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.event.inputs.environment || 'test' }}-${{ github.run_number }}
+          path: |
+            automationexercise-e2e-pom/test-results/
+            automationexercise-e2e-pom/test-reports/
+          retention-days: 30
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: automationexercise-e2e-pom/playwright-report/
+          retention-days: 30
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          cd automationexercise-e2e-pom
+          echo "## E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ github.event.inputs.environment || 'test' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Scope:** ${{ github.event.inputs.test_scope || 'smoke' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers:** ${{ github.event.inputs.workers || '3' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send Email Report
+        if: ${{ always() && github.event.inputs.email_recipients != '' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "E2E Test Report - ${{ github.event.inputs.environment || 'test' }} - Run #${{ github.run_number }}"
+          to: ${{ github.event.inputs.email_recipients }}
+          from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
+          html_body: |
+            <h2>E2E Test Execution Report</h2>
+            
+            <h3>Test Configuration</h3>
+            <ul>
+              <li><strong>Environment:</strong> ${{ github.event.inputs.environment || 'test' }}</li>
+              <li><strong>Test Scope:</strong> ${{ github.event.inputs.test_scope || 'smoke' }}</li>
+              <li><strong>Workers:</strong> ${{ github.event.inputs.workers || '3' }}</li>
+              <li><strong>Trigger:</strong> ${{ github.event_name }}</li>
+              <li><strong>Run Number:</strong> #${{ github.run_number }}</li>
+              <li><strong>Execution Time:</strong> ${{ github.event.repository.updated_at }}</li>
+            </ul>
+            
+            <h3>Quick Links</h3>
+            <ul>
+              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Full Execution Log</a></li>
+              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts">Download Test Reports</a></li>
+            </ul>
+            
+            <h3>Results</h3>
+            <p>Test execution completed. Download detailed reports from the artifacts section.</p>
+            
+            <p><em>Automated report from GitHub Actions</em></p>

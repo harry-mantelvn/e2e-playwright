@@ -36,16 +36,16 @@ npx playwright install --with-deps
 echo "Running tests..."
 case "$SCOPE" in
     "smoke")
-        cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/smoke --workers=$WORKERS
+        npx cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/smoke --workers=$WORKERS
         ;;
     "regression")
-        cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/regression --workers=$WORKERS
+        npx cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/regression --workers=$WORKERS
         ;;
     "basic")
-        cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/basic.spec.ts --workers=$WORKERS
+        npx cross-env NODE_ENV=$ENVIRONMENT npx playwright test tests/basic.spec.ts --workers=$WORKERS
         ;;
     "all")
-        cross-env NODE_ENV=$ENVIRONMENT npx playwright test --workers=$WORKERS
+        npx cross-env NODE_ENV=$ENVIRONMENT npx playwright test --workers=$WORKERS
         ;;
     *)
         echo "Unknown scope: $SCOPE"
