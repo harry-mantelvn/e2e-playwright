@@ -201,6 +201,7 @@ jobs:
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{WORKERS}}/${{ github.event.inputs.workers || '3' }}/g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TRIGGER}}/${{ github.event_name }}/g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{RUN_NUMBER}}/${{ github.run_number }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{EXECUTION_TIME}}/$(date '+%Y-%m-%d %H:%M:%S UTC')/g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{EXECUTION_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{ARTIFACTS_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{REPO_URL}}|${{ github.server_url }}/${{ github.repository }}|g")
@@ -215,6 +216,25 @@ jobs:
 
       - name: Send Professional Email
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+          
+          # Read the email content
+          if [ -f "test-summary/final-email.html" ]; then
+            EMAIL_CONTENT=$(cat test-summary/final-email.html)
+            echo "Using professional email template"
+          else
+            EMAIL_CONTENT="<h2>E2E Test Report</h2><p>Tests completed. Please check artifacts for detailed results.</p>"
+            echo "Using fallback email template"
+          fi
+          
+          # Export email content to environment file for next step
+          echo "EMAIL_HTML_BODY<<EOF" >> $GITHUB_ENV
+          echo "$EMAIL_CONTENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Send Email with Content
+        if: ${{ always() && github.event.inputs.email_recipients != '' }}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -222,7 +242,7 @@ jobs:
           secure: false
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "🧪 E2E Test Report - ${{ github.event.inputs.environment || 'test' }} Environment - Run #${{ github.run_number }}"
+          subject: "E2E Test Report - ${{ github.event.inputs.environment || 'test' }} Environment - Run #${{ github.run_number }}"
           to: ${{ github.event.inputs.email_recipients }}
           from: "QA Automation <${{ secrets.EMAIL_USERNAME }}>"
-          html_body_file: automationexercise-e2e-pom/test-summary/final-email.html
+          html_body: ${{ env.EMAIL_HTML_BODY }}
