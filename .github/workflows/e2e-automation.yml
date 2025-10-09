@@ -128,7 +128,8 @@ jobs:
         if: always()
         run: |
           cd automationexercise-e2e-pom
-          npm run allure:generate
+          npm run allure:generate || echo "Allure report generation failed, continuing..."
+        continue-on-error: true
 
       - name: Upload Allure Report
         if: always()

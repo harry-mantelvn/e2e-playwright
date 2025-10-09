@@ -12,6 +12,7 @@ const dirsToClean = [
   'test-reports',
   'test-results',
   'single-file-reports', 
+  'allure-report',
   'playwright-report'
 ];
 
