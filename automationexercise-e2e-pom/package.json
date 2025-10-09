@@ -20,6 +20,8 @@
     "allure:generate": "./generate-allure-report.sh",
     "allure:serve": "npx allure serve test-reports/allure-results",
     "allure:generate-simple": "mkdir -p single-file-reports && npx allure generate test-reports/allure-results",
+    "metrics:generate": "./generate-test-metrics.sh",
+    "email:generate": "./generate-email-report.sh",
     "reports": "npm run allure:generate && npm run report:html",
     "auth:setup": "cross-env NODE_ENV=test npx playwright test helper/authentication-setup.ts"
   },

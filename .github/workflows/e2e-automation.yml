@@ -131,6 +131,14 @@ jobs:
           npm run allure:generate || echo "Allure report generation failed, continuing..."
         continue-on-error: true
 
+      - name: Generate Test Metrics and Email Report
+        if: always()
+        run: |
+          cd automationexercise-e2e-pom
+          npm run metrics:generate || echo "Metrics generation failed, continuing..."
+          npm run email:generate || echo "Email report generation failed, continuing..."
+        continue-on-error: true
+
       - name: Upload Allure Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -157,6 +165,15 @@ jobs:
           path: automationexercise-e2e-pom/playwright-report/
           retention-days: 30
 
+      - name: Upload Enhanced Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enhanced-reports-${{ github.run_number }}
+          path: |
+            automationexercise-e2e-pom/test-summary/
+          retention-days: 30
+
       - name: Generate Test Summary
         if: always()
         run: |
@@ -173,6 +190,31 @@ jobs:
 
       - name: Send Email Report
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+          # Create the professional email with variable substitution
+          if [ -f "test-summary/professional-email.html" ]; then
+            EMAIL_BODY=$(cat test-summary/professional-email.html)
+            # Replace template variables
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{ENVIRONMENT}}/${{ github.event.inputs.environment || 'test' }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TEST_SCOPE}}/${{ github.event.inputs.test_scope || 'smoke' }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{WORKERS}}/${{ github.event.inputs.workers || '3' }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TRIGGER}}/${{ github.event_name }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{RUN_NUMBER}}/${{ github.run_number }}/g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{EXECUTION_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{ARTIFACTS_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|g")
+            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{REPO_URL}}|${{ github.server_url }}/${{ github.repository }}|g")
+            
+            # Save the final email body
+            echo "$EMAIL_BODY" > test-summary/final-email.html
+            echo "Professional email report prepared successfully"
+          else
+            echo "Professional email template not found, using fallback"
+            echo "<h2>E2E Test Report</h2><p>Tests completed. Please check artifacts for detailed results.</p>" > test-summary/final-email.html
+          fi
+
+      - name: Send Professional Email
+        if: ${{ always() && github.event.inputs.email_recipients != '' }}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -180,29 +222,7 @@ jobs:
           secure: false
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "E2E Test Report - ${{ github.event.inputs.environment || 'test' }} - Run #${{ github.run_number }}"
+          subject: "🧪 E2E Test Report - ${{ github.event.inputs.environment || 'test' }} Environment - Run #${{ github.run_number }}"
           to: ${{ github.event.inputs.email_recipients }}
-          from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
-          html_body: |
-            <h2>E2E Test Execution Report</h2>
-            
-            <h3>Test Configuration</h3>
-            <ul>
-              <li><strong>Environment:</strong> ${{ github.event.inputs.environment || 'test' }}</li>
-              <li><strong>Test Scope:</strong> ${{ github.event.inputs.test_scope || 'smoke' }}</li>
-              <li><strong>Workers:</strong> ${{ github.event.inputs.workers || '3' }}</li>
-              <li><strong>Trigger:</strong> ${{ github.event_name }}</li>
-              <li><strong>Run Number:</strong> #${{ github.run_number }}</li>
-              <li><strong>Execution Time:</strong> ${{ github.event.repository.updated_at }}</li>
-            </ul>
-            
-            <h3>Quick Links</h3>
-            <ul>
-              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">View Full Execution Log</a></li>
-              <li><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts">Download Test Reports</a></li>
-            </ul>
-            
-            <h3>Results</h3>
-            <p>Test execution completed. Download detailed reports from the artifacts section.</p>
-            
-            <p><em>Automated report from GitHub Actions</em></p>
+          from: "QA Automation <${{ secrets.EMAIL_USERNAME }}>"
+          html_body_file: automationexercise-e2e-pom/test-summary/final-email.html
