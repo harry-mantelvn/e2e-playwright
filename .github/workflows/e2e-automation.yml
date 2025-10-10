@@ -131,12 +131,76 @@ jobs:
           npm run allure:generate || echo "Allure report generation failed, continuing..."
         continue-on-error: true
 
-      - name: Generate Test Metrics and Email Report
+      - name: Generate Test Metrics and Reports
         if: always()
         run: |
           cd automationexercise-e2e-pom
           npm run metrics:generate || echo "Metrics generation failed, continuing..."
           npm run email:generate || echo "Email report generation failed, continuing..."
+          
+          # Generate GitHub Step Summary from unified template
+          if [ -f "test-summary/github-summary.md" ]; then
+            # Replace template variables in GitHub summary
+            GITHUB_SUMMARY=$(cat test-summary/github-summary.md)
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{ENVIRONMENT}}/${{ github.event.inputs.environment || 'test' }}/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{TEST_SCOPE}}/${{ github.event.inputs.test_scope || 'smoke' }}/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{WORKERS}}/${{ github.event.inputs.workers || '3' }}/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{TRIGGER}}/${{ github.event_name }}/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{RUN_NUMBER}}/${{ github.run_number }}/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{EXECUTION_TIME}}/$(date '+%Y-%m-%d %H:%M:%S UTC')/g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s|{{EXECUTION_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s|{{ARTIFACTS_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|g")
+            GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s|{{REPO_URL}}|${{ github.server_url }}/${{ github.repository }}|g")
+            
+            # Add additional variables for better formatting
+            if [ -f "test-summary/metrics.json" ]; then
+              TOTAL_TESTS=$(grep '"total_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              FAIL_RATE=$(grep '"fail_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              SMOKE_TESTS=$(grep '"smoke_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              REGRESSION_TESTS=$(grep '"regression_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              BASIC_TESTS=$(grep '"basic_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/')
+              
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{TOTAL_TESTS}}/$TOTAL_TESTS/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{PASS_RATE}}/$PASS_RATE/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{SMOKE_TESTS}}/$SMOKE_TESTS/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{REGRESSION_TESTS}}/$REGRESSION_TESTS/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{BASIC_TESTS}}/$BASIC_TESTS/g")
+              
+              # Set status icon based on pass rate
+              if [ $PASS_RATE -ge 90 ]; then
+                STATUS_ICON="✅"
+                RISK_LEVEL="Low - System stable"
+                RECOMMENDATION="System ready for deployment"
+              elif [ $PASS_RATE -ge 80 ]; then
+                STATUS_ICON="⚠️"
+                RISK_LEVEL="Medium - Review recommended"
+                RECOMMENDATION="Minor issues to address before deployment"
+              else
+                STATUS_ICON="❌"
+                RISK_LEVEL="High - Immediate attention required"
+                RECOMMENDATION="Critical issues must be resolved before deployment"
+              fi
+              
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{STATUS_ICON}}/$STATUS_ICON/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{RISK_LEVEL}}/$RISK_LEVEL/g")
+              GITHUB_SUMMARY=$(echo "$GITHUB_SUMMARY" | sed "s/{{RECOMMENDATION}}/$RECOMMENDATION/g")
+            fi
+            
+            # Write to GitHub Step Summary
+            echo "$GITHUB_SUMMARY" >> $GITHUB_STEP_SUMMARY
+          else
+            # Fallback to simple summary
+            echo "## E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Environment:** ${{ github.event.inputs.environment || 'test' }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Test Scope:** ${{ github.event.inputs.test_scope || 'smoke' }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Workers:** ${{ github.event.inputs.workers || '3' }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
+          fi
         continue-on-error: true
 
       - name: Upload Allure Report
@@ -178,15 +242,7 @@ jobs:
         if: always()
         run: |
           cd automationexercise-e2e-pom
-          echo "## E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** ${{ github.event.inputs.environment || 'test' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Scope:** ${{ github.event.inputs.test_scope || 'smoke' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workers:** ${{ github.event.inputs.workers || '3' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
+          echo "Test summary generation completed via unified template."
 
       - name: Send Email Report
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
