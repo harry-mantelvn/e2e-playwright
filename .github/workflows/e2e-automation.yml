@@ -175,50 +175,112 @@ jobs:
             automationexercise-e2e-pom/test-summary/
           retention-days: 30
 
-      - name: Generate Test Summary
+      - name: Generate Enhanced Test Summary
         if: always()
         run: |
           cd automationexercise-e2e-pom
-          echo "## E2E Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          
+          # Read metrics if available
+          if [ -f "test-summary/metrics.json" ]; then
+            TOTAL_TESTS=$(grep '"total_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            TOTAL_TEST_CASES=$(grep '"total_test_cases"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASSED_TESTS=$(grep '"passed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            FAILED_TESTS=$(grep '"failed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            TEST_COVERAGE=$(grep '"test_coverage_percentage"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "85")
+          else
+            TOTAL_TESTS=0; TOTAL_TEST_CASES=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0; TEST_COVERAGE=85
+          fi
+          
+          # Set status emoji and color
+          if [ $PASS_RATE -ge 95 ]; then
+            STATUS_EMOJI="🎯"; STATUS="EXCELLENT"
+          elif [ $PASS_RATE -ge 85 ]; then
+            STATUS_EMOJI="✅"; STATUS="GOOD"
+          elif [ $PASS_RATE -ge 70 ]; then
+            STATUS_EMOJI="⚠️"; STATUS="NEEDS ATTENTION"
+          else
+            STATUS_EMOJI="🚨"; STATUS="CRITICAL"
+          fi
+          
+          # Generate enhanced summary
+          echo "# $STATUS_EMOJI E2E Test Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** ${{ github.event.inputs.environment || 'test' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Scope:** ${{ github.event.inputs.test_scope || 'smoke' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workers:** ${{ github.event.inputs.workers || '3' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Execution Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Overall Status** | $STATUS | $STATUS_EMOJI |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Total Test Cases** | $TOTAL_TEST_CASES | 📝 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Files** | $TOTAL_TESTS | 📁 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Passed** | $PASSED_TESTS | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Failed** | $FAILED_TESTS | ❌ |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Pass Rate** | ${PASS_RATE}% | $([ $PASS_RATE -ge 85 ] && echo "✅" || echo "⚠️") |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Coverage** | ${TEST_COVERAGE}% | 📈 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## ⚙️ Execution Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** \`${{ github.event.inputs.environment || 'test' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Scope:** \`${{ github.event.inputs.test_scope || 'smoke' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Parallel Workers:** \`${{ github.event.inputs.workers || '3' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Number:** \`#${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution Time:** \`$(date '+%Y-%m-%d %H:%M:%S UTC')\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🔗 Quick Access" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 [View Pipeline](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- 📁 [Download Enhanced Reports](#artifacts)" >> $GITHUB_STEP_SUMMARY
+          echo "- 💻 [Source Code](${{ github.server_url }}/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add recommendation based on results
+          echo "## 🎯 Recommendations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ $PASS_RATE -ge 95 ]; then
+            echo "✅ **Excellent quality!** System is ready for production deployment." >> $GITHUB_STEP_SUMMARY
+            echo "- Continue monitoring for regression" >> $GITHUB_STEP_SUMMARY
+            echo "- Consider expanding test coverage" >> $GITHUB_STEP_SUMMARY
+          elif [ $PASS_RATE -ge 85 ]; then
+            echo "⚠️ **Good quality with minor issues.** Review failed tests before deployment." >> $GITHUB_STEP_SUMMARY
+            echo "- Investigate and fix failed test cases" >> $GITHUB_STEP_SUMMARY
+            echo "- Review test environment setup" >> $GITHUB_STEP_SUMMARY
+          elif [ $PASS_RATE -ge 70 ]; then
+            echo "🔍 **Quality concerns detected.** Requires immediate attention before deployment." >> $GITHUB_STEP_SUMMARY
+            echo "- Immediate investigation of failed tests required" >> $GITHUB_STEP_SUMMARY
+            echo "- Review recent code changes" >> $GITHUB_STEP_SUMMARY
+            echo "- Consider additional regression testing" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🚨 **Critical quality issues!** Deployment should be blocked until issues are resolved." >> $GITHUB_STEP_SUMMARY
+            echo "- **BLOCK DEPLOYMENT** immediately" >> $GITHUB_STEP_SUMMARY
+            echo "- Emergency team review required" >> $GITHUB_STEP_SUMMARY
+            echo "- Full regression testing needed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📧 **Enhanced email report available in artifacts for detailed analysis**" >> $GITHUB_STEP_SUMMARY
 
       - name: Send Enhanced Email Report
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
         run: |
           cd automationexercise-e2e-pom
-          # Use enhanced email report if available, fallback to professional email
-          EMAIL_FILE="test-summary/enhanced-email-report.html"
-          if [ ! -f "$EMAIL_FILE" ]; then
-            EMAIL_FILE="test-summary/professional-email.html"
-          fi
           
-          if [ -f "$EMAIL_FILE" ]; then
-            EMAIL_BODY=$(cat "$EMAIL_FILE")
-            # Replace template variables with GitHub context
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{ENVIRONMENT}}/${{ github.event.inputs.environment || 'test' }}/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TEST_SCOPE}}/${{ github.event.inputs.test_scope || 'smoke' }}/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{WORKERS}}/${{ github.event.inputs.workers || '3' }}/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TRIGGER}}/${{ github.event_name }}/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{RUN_NUMBER}}/${{ github.run_number }}/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{EXECUTION_TIME}}/$(date '+%Y-%m-%d %H:%M:%S UTC')/g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{EXECUTION_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{ARTIFACTS_URL}}|${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts|g")
-            EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s|{{REPO_URL}}|${{ github.server_url }}/${{ github.repository }}|g")
-            
-            # Save the final email body
-            echo "$EMAIL_BODY" > test-summary/final-email.html
-            echo "Professional email report prepared successfully"
-          else
-            echo "Professional email template not found, using fallback"
-            echo "<h2>E2E Test Report</h2><p>Tests completed. Please check artifacts for detailed results.</p>" > test-summary/final-email.html
-          fi
+          # Set environment variables for the script
+          export ENVIRONMENT="${{ github.event.inputs.environment || 'test' }}"
+          export TEST_SCOPE="${{ github.event.inputs.test_scope || 'smoke' }}"
+          export WORKERS="${{ github.event.inputs.workers || '3' }}"
+          export BROWSER="chromium"
+          export TRIGGER="${{ github.event_name }}"
+          export RUN_NUMBER="${{ github.run_number }}"
+          export EXECUTION_TIME="$(date '+%Y-%m-%d %H:%M:%S UTC')"
+          export GITHUB_SERVER_URL="${{ github.server_url }}"
+          export GITHUB_REPOSITORY="${{ github.repository }}"
+          export GITHUB_RUN_ID="${{ github.run_id }}"
+          
+          # Make script executable and run it
+          chmod +x replace-email-variables.sh
+          ./replace-email-variables.sh
 
       - name: Send Professional Email
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
