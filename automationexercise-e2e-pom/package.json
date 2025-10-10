@@ -30,9 +30,12 @@
     "metrics:generate": "./generate-test-metrics.sh",
     "email:generate": "./generate-email-report.sh",
     "email:enhanced": "./generate-enhanced-email-report.sh",
+    "email:process": "./replace-email-variables.sh",
+    "email:test": "./test-enhanced-email-integration.sh",
     "reports:unified": "./generate-unified-report.sh",
     "reports:all": "npm run allure:generate && npm run metrics:generate && npm run email:enhanced",
     "reports:complete": "npm run allure:generate && npm run metrics:generate && npm run email:generate && npm run email:enhanced",
+    "reports:ci": "npm run allure:generate && npm run metrics:generate && npm run email:enhanced && npm run email:process",
     "reports": "npm run allure:generate && npm run report:html",
     "auth:setup": "cross-env NODE_ENV=test npx playwright test helper/authentication-setup.ts"
   },
