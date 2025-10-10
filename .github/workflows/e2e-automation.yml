@@ -131,12 +131,13 @@ jobs:
           npm run allure:generate || echo "Allure report generation failed, continuing..."
         continue-on-error: true
 
-      - name: Generate Test Metrics and Email Report
+      - name: Generate Test Metrics and Enhanced Email Report
         if: always()
         run: |
           cd automationexercise-e2e-pom
           npm run metrics:generate || echo "Metrics generation failed, continuing..."
-          npm run email:generate || echo "Email report generation failed, continuing..."
+          npm run email:enhanced || echo "Enhanced email report generation failed, continuing..."
+          npm run email:generate || echo "Basic email report generation failed, continuing..."
         continue-on-error: true
 
       - name: Upload Allure Report
@@ -188,14 +189,19 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Reports available in artifacts section**" >> $GITHUB_STEP_SUMMARY
 
-      - name: Send Email Report
+      - name: Send Enhanced Email Report
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
         run: |
           cd automationexercise-e2e-pom
-          # Create the professional email with variable substitution
-          if [ -f "test-summary/professional-email.html" ]; then
-            EMAIL_BODY=$(cat test-summary/professional-email.html)
-            # Replace template variables
+          # Use enhanced email report if available, fallback to professional email
+          EMAIL_FILE="test-summary/enhanced-email-report.html"
+          if [ ! -f "$EMAIL_FILE" ]; then
+            EMAIL_FILE="test-summary/professional-email.html"
+          fi
+          
+          if [ -f "$EMAIL_FILE" ]; then
+            EMAIL_BODY=$(cat "$EMAIL_FILE")
+            # Replace template variables with GitHub context
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{ENVIRONMENT}}/${{ github.event.inputs.environment || 'test' }}/g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{TEST_SCOPE}}/${{ github.event.inputs.test_scope || 'smoke' }}/g")
             EMAIL_BODY=$(echo "$EMAIL_BODY" | sed "s/{{WORKERS}}/${{ github.event.inputs.workers || '3' }}/g")
