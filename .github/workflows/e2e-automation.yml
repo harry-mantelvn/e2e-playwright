@@ -4,17 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Test Environment'
+        description: "Test Environment"
         required: true
-        default: 'test'
+        default: "test"
         type: choice
         options:
           - test
           - prerelease
       test_scope:
-        description: 'Test Scope'
+        description: "Test Scope"
         required: true
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all
@@ -25,7 +25,7 @@ on:
       specific_spec:
         description: 'Specific Test File (when scope is "specific")'
         required: false
-        default: 'tests/basic.spec.ts'
+        default: "tests/basic.spec.ts"
         type: choice
         options:
           - tests/basic.spec.ts
@@ -36,31 +36,31 @@ on:
           - tests/regression/products/add-to-cart-and-checkout.spec.ts
           - tests/regression/contact/submit-contact-form.spec.ts
       workers:
-        description: 'Number of Workers'
+        description: "Number of Workers"
         required: true
-        default: '3'
+        default: "3"
         type: string
       email_recipients:
-        description: 'Email Recipients (comma-separated, optional)'
+        description: "Email Recipients (comma-separated, optional)"
         required: false
         type: string
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'automationexercise-e2e-pom/**'
+      - "automationexercise-e2e-pom/**"
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'automationexercise-e2e-pom/**'
+      - "automationexercise-e2e-pom/**"
   schedule:
     # Run smoke tests daily at 6 AM UTC
-    - cron: '0 6 * * *'
+    - cron: "0 6 * * *"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,8 +68,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
           cache-dependency-path: automationexercise-e2e-pom/package-lock.json
 
       - name: Install dependencies
@@ -179,7 +179,7 @@ jobs:
         if: always()
         run: |
           cd automationexercise-e2e-pom
-          
+
           # Read metrics if available
           if [ -f "test-summary/metrics.json" ]; then
             TOTAL_TESTS=$(grep '"total_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
@@ -191,7 +191,7 @@ jobs:
           else
             TOTAL_TESTS=0; TOTAL_TEST_CASES=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0; TEST_COVERAGE=85
           fi
-          
+
           # Set status emoji and color
           if [ $PASS_RATE -ge 95 ]; then
             STATUS_EMOJI="🎯"; STATUS="EXCELLENT"
@@ -202,7 +202,7 @@ jobs:
           else
             STATUS_EMOJI="🚨"; STATUS="CRITICAL"
           fi
-          
+
           # Generate enhanced summary
           echo "# $STATUS_EMOJI E2E Test Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -218,7 +218,7 @@ jobs:
           echo "| **Pass Rate** | ${PASS_RATE}% | $([ $PASS_RATE -ge 85 ] && echo "✅" || echo "⚠️") |" >> $GITHUB_STEP_SUMMARY
           echo "| **Test Coverage** | ${TEST_COVERAGE}% | 📈 |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## ⚙️ Execution Configuration" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** \`${{ github.event.inputs.environment || 'test' }}\`" >> $GITHUB_STEP_SUMMARY
@@ -228,14 +228,14 @@ jobs:
           echo "- **Run Number:** \`#${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Execution Time:** \`$(date '+%Y-%m-%d %H:%M:%S UTC')\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## 🔗 Quick Access" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- 📊 [View Pipeline](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
           echo "- 📁 [Download Enhanced Reports](#artifacts)" >> $GITHUB_STEP_SUMMARY
           echo "- 💻 [Source Code](${{ github.server_url }}/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Add recommendation based on results
           echo "## 🎯 Recommendations" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -265,7 +265,7 @@ jobs:
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
         run: |
           cd automationexercise-e2e-pom
-          
+
           # Set environment variables for the script
           export ENVIRONMENT="${{ github.event.inputs.environment || 'test' }}"
           export TEST_SCOPE="${{ github.event.inputs.test_scope || 'smoke' }}"
@@ -277,7 +277,7 @@ jobs:
           export GITHUB_SERVER_URL="${{ github.server_url }}"
           export GITHUB_REPOSITORY="${{ github.repository }}"
           export GITHUB_RUN_ID="${{ github.run_id }}"
-          
+
           # Make script executable and run it
           chmod +x replace-email-variables.sh
           ./replace-email-variables.sh
@@ -286,7 +286,7 @@ jobs:
         if: ${{ always() && github.event.inputs.email_recipients != '' }}
         run: |
           cd automationexercise-e2e-pom
-          
+
           # Read the email content
           if [ -f "test-summary/final-email.html" ]; then
             EMAIL_CONTENT=$(cat test-summary/final-email.html)
@@ -295,7 +295,7 @@ jobs:
             EMAIL_CONTENT="<h2>E2E Test Report</h2><p>Tests completed. Please check artifacts for detailed results.</p>"
             echo "Using fallback email template"
           fi
-          
+
           # Export email content to environment file for next step
           echo "EMAIL_HTML_BODY<<EOF" >> $GITHUB_ENV
           echo "$EMAIL_CONTENT" >> $GITHUB_ENV
@@ -314,3 +314,69 @@ jobs:
           to: ${{ github.event.inputs.email_recipients }}
           from: "QA Automation <${{ secrets.EMAIL_USERNAME }}>"
           html_body: ${{ env.EMAIL_HTML_BODY }}
+
+      - name: Send Teams Notification
+        if: ${{ always() && secrets.TEAMS_WEBHOOK_URL != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+
+          # Read metrics if available
+          if [ -f "test-summary/metrics.json" ]; then
+            TOTAL_TESTS=$(grep '"total_test_cases"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASSED_TESTS=$(grep '"passed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            FAILED_TESTS=$(grep '"failed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+          else
+            TOTAL_TESTS=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0
+          fi
+
+          # Determine status
+          if [ $PASS_RATE -ge 95 ]; then
+            STATUS="EXCELLENT"
+          elif [ $PASS_RATE -ge 85 ]; then
+            STATUS="GOOD"
+          else
+            STATUS="CRITICAL"
+          fi
+
+          # Send notification using script
+          export TEAMS_WEBHOOK_URL="${{ secrets.TEAMS_WEBHOOK_URL }}"
+
+          PIPELINE_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="E2E Test Report - Run #${{ github.run_number }} | Status: $STATUS | Environment: ${{ github.event.inputs.environment || 'test' }} | Scope: ${{ github.event.inputs.test_scope || 'smoke' }} | Tests: $TOTAL_TESTS | Passed: $PASSED_TESTS | Failed: $FAILED_TESTS | Pass Rate: ${PASS_RATE}% | Pipeline: $PIPELINE_URL"
+
+          npm run teams:notify "$MESSAGE" || echo "Teams notification failed, continuing..."
+        continue-on-error: true
+
+      - name: Send Slack Notification
+        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+
+          # Read metrics if available
+          if [ -f "test-summary/metrics.json" ]; then
+            TOTAL_TESTS=$(grep '"total_test_cases"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASSED_TESTS=$(grep '"passed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            FAILED_TESTS=$(grep '"failed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+          else
+            TOTAL_TESTS=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0
+          fi
+
+          # Determine status
+          if [ $PASS_RATE -ge 95 ]; then
+            STATUS="EXCELLENT"
+          elif [ $PASS_RATE -ge 85 ]; then
+            STATUS="GOOD"
+          else
+            STATUS="CRITICAL"
+          fi
+
+          # Send notification using script
+          export SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+
+          PIPELINE_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="E2E Test Report - Run #${{ github.run_number }} | Status: $STATUS | Environment: ${{ github.event.inputs.environment || 'test' }} | Scope: ${{ github.event.inputs.test_scope || 'smoke' }} | Tests: $TOTAL_TESTS | Passed: $PASSED_TESTS | Failed: $FAILED_TESTS | Pass Rate: ${PASS_RATE}% | Pipeline: $PIPELINE_URL"
+
+          npm run slack:notify "$MESSAGE" || echo "Slack notification failed, continuing..."
+        continue-on-error: true
