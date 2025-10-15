@@ -314,3 +314,69 @@ jobs:
           to: ${{ github.event.inputs.email_recipients }}
           from: "QA Automation <${{ secrets.EMAIL_USERNAME }}>"
           html_body: ${{ env.EMAIL_HTML_BODY }}
+
+      - name: Send Teams Notification
+        if: ${{ always() && secrets.TEAMS_WEBHOOK_URL != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+          
+          # Read metrics if available
+          if [ -f "test-summary/metrics.json" ]; then
+            TOTAL_TESTS=$(grep '"total_test_cases"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASSED_TESTS=$(grep '"passed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            FAILED_TESTS=$(grep '"failed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+          else
+            TOTAL_TESTS=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0
+          fi
+          
+          # Determine status
+          if [ $PASS_RATE -ge 95 ]; then
+            STATUS="EXCELLENT"
+          elif [ $PASS_RATE -ge 85 ]; then
+            STATUS="GOOD"
+          else
+            STATUS="CRITICAL"
+          fi
+          
+          # Send notification using script
+          export TEAMS_WEBHOOK_URL="${{ secrets.TEAMS_WEBHOOK_URL }}"
+          
+          PIPELINE_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="E2E Test Report - Run #${{ github.run_number }} | Status: $STATUS | Environment: ${{ github.event.inputs.environment || 'test' }} | Scope: ${{ github.event.inputs.test_scope || 'smoke' }} | Tests: $TOTAL_TESTS | Passed: $PASSED_TESTS | Failed: $FAILED_TESTS | Pass Rate: ${PASS_RATE}% | Pipeline: $PIPELINE_URL"
+          
+          npm run teams:notify "$MESSAGE" || echo "Teams notification failed, continuing..."
+        continue-on-error: true
+
+      - name: Send Slack Notification
+        if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          cd automationexercise-e2e-pom
+          
+          # Read metrics if available
+          if [ -f "test-summary/metrics.json" ]; then
+            TOTAL_TESTS=$(grep '"total_test_cases"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASSED_TESTS=$(grep '"passed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            FAILED_TESTS=$(grep '"failed_tests"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+            PASS_RATE=$(grep '"pass_rate"' test-summary/metrics.json | sed 's/.*: *\([0-9]*\).*/\1/' || echo "0")
+          else
+            TOTAL_TESTS=0; PASSED_TESTS=0; FAILED_TESTS=0; PASS_RATE=0
+          fi
+          
+          # Determine status
+          if [ $PASS_RATE -ge 95 ]; then
+            STATUS="EXCELLENT"
+          elif [ $PASS_RATE -ge 85 ]; then
+            STATUS="GOOD"
+          else
+            STATUS="CRITICAL"
+          fi
+          
+          # Send notification using script
+          export SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+          
+          PIPELINE_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MESSAGE="E2E Test Report - Run #${{ github.run_number }} | Status: $STATUS | Environment: ${{ github.event.inputs.environment || 'test' }} | Scope: ${{ github.event.inputs.test_scope || 'smoke' }} | Tests: $TOTAL_TESTS | Passed: $PASSED_TESTS | Failed: $FAILED_TESTS | Pass Rate: ${PASS_RATE}% | Pipeline: $PIPELINE_URL"
+          
+          npm run slack:notify "$MESSAGE" || echo "Slack notification failed, continuing..."
+        continue-on-error: true
