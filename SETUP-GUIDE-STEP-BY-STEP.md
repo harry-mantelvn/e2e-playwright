@@ -175,8 +175,9 @@ npm list axios  # Phải có axios
 
 ```bash
 # KHÔNG CHẠY lệnh này! Chỉ để tham khảo
-# URL format: https://hooks.slack.com/services/YOUR_WORKSPACE_ID/YOUR_CHANNEL_ID/YOUR_TOKEN
-# Example: https://hooks.slack.com/services/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
+# URL format: https://hooks.slack.com/services/[WORKSPACE_ID]/[CHANNEL_ID]/[SECRET_TOKEN]
+# Example format only - DO NOT USE:
+# https://hooks.slack.com/services/T01AAAAAAAA/B01BBBBBBB/xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ---

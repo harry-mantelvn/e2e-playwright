@@ -90,7 +90,7 @@ File `SETUP-GUIDE-STEP-BY-STEP.md` đã được fix:
 
 **Before** (❌ Detected as secret):
 ```
-https://hooks.slack.com/services/TXXXXXXXX/BXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX
+https://hooks.slack.com/services/T[WORKSPACE]/B[CHANNEL]/[SECRET_TOKEN]
 ```
 
 **After** (✅ Safe):
