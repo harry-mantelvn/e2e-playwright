@@ -43,8 +43,6 @@
     "teams:app-build": "./scripts/build-teams-app.sh",
     "slack:notify": "./scripts/send-slack-notification.sh",
     "slack:test": "./scripts/test-slack-integration.sh",
-    "slack:cli": "node slack-cli.js",
-    "slack:report": "node slack-cli.js --report",
     "notify:all": "./scripts/send-universal-notification.sh",
     "auth:setup": "cross-env NODE_ENV=test npx playwright test helper/authentication-setup.ts"
   },

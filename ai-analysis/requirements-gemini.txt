@@ -1,9 +1,0 @@
-# AI Analysis Dependencies - Google Gemini FREE Version
-
-# Google Gemini (FREE)
-google-generativeai>=0.3.0
-
-# Machine Learning & Statistical Analysis
-scikit-learn>=1.3.0
-scipy>=1.11.0
-numpy>=1.24.0
