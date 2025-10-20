@@ -16,7 +16,7 @@ test.describe('Cart Smoke Tests', () => {
 
   test('should display cart page correctly', async () => {
     await test.step('Navigate to cart page', async () => {
-      await cartPage.goto('/view_cart');
+      await cartPage.goto('/view_cart/test');
     });
 
     await test.step('Verify cart page structure', async () => {
@@ -26,7 +26,7 @@ test.describe('Cart Smoke Tests', () => {
 
   test('should allow navigation to products from cart', async () => {
     await test.step('Navigate to cart page', async () => {
-      await cartPage.goto('/view_cart');
+      await cartPage.goto('/view_cart/test');
     });
 
     await test.step('Navigate to products page', async () => {
@@ -40,7 +40,7 @@ test.describe('Cart Smoke Tests', () => {
 
   test('should allow newsletter subscription from cart page', async () => {
     await test.step('Navigate to cart page', async () => {
-      await cartPage.goto('/view_cart');
+      await cartPage.goto('/view_cart/test');
     });
 
     await test.step('Subscribe to newsletter', async () => {

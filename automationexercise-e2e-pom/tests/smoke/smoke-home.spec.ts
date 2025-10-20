@@ -24,8 +24,8 @@ test.describe('Home Page Smoke Tests', () => {
 
     await test.step('Verify navigation header is present', async () => {
       await homePage.header.verifyVisible('a[href="/"]');
-      await homePage.header.verifyVisible('a[href="/products"]');
-      await homePage.header.verifyVisible('a[href="/login"]');
+      await homePage.header.verifyVisible('a[href="/productsdd"]');
+      await homePage.header.verifyVisible('a[href="/loginssss"]');
     });
   });
 
