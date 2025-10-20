@@ -8,11 +8,11 @@
 
 ### Changes Made:
 ```diff
-- https://hooks.slack.com/services/TXXXXXXXX/BXXXXXXXX/XXXX...
-+ https://hooks.slack.com/services/[WORKSPACE_ID]/[CHANNEL_ID]/[SECRET_TOKEN]
+- Old webhook format with real tokens
++ https://hooks.slack.com/services/YOUR_WORKSPACE_ID/YOUR_CHANNEL_ID/YOUR_SECRET_TOKEN
 
-- https://hooks.slack.com/services/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  
-+ https://hooks.slack.com/services/T01AAAAAAAA/B01BBBBBBB/xxxxxxxxxxxxxxxxxxxxxxxx
+- Example with sensitive data removed
++ https://hooks.slack.com/services/WORKSPACE_ID_HERE/CHANNEL_ID_HERE/TOKEN_HERE
 ```
 
 ---
