@@ -58,7 +58,72 @@ esac
 echo "Generating reports..."
 npm run reports
 
+# Run AI Analysis on test results
+echo ""
+echo "================================"
+echo "Running AI Test Analysis..."
+echo "================================"
+
+cd ../ai-analysis
+
+# Find the most recent test results
+if [ -f "../automationexercise-e2e-pom/test-reports/allure-results/data/test-cases/*.json" ]; then
+    echo "✅ Test results found, analyzing..."
+    
+    # Use fallback mode by default, or AI if GITHUB_TOKEN is set
+    if [ -n "$GITHUB_TOKEN" ]; then
+        echo "🤖 Using GitHub Copilot AI for analysis..."
+        python3 analyze-github.py --test-results ../automationexercise-e2e-pom/test-reports/allure-results 2>analysis.log 1>analysis-output.json || \
+            python3 analyze-github.py --fallback 2>analysis.log 1>analysis-output.json
+    else
+        echo "📊 Using professional fallback analysis (set GITHUB_TOKEN for AI mode)..."
+        python3 analyze-github.py --test-results ../automationexercise-e2e-pom/test-reports/allure-results --fallback 2>analysis.log 1>analysis-output.json
+    fi
+    
+    # Display summary
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📊 AI ANALYSIS SUMMARY"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    if [ -f "analysis-output.json" ]; then
+        python3 -c "
+import json
+try:
+    with open('analysis-output.json') as f:
+        data = json.load(f)
+        summary = data.get('summary', {})
+        print(f\"Total Tests: {summary.get('total_tests', 0)}\")
+        print(f\"Passed: {summary.get('passed_tests', 0)}\")
+        print(f\"Failed: {summary.get('total_failures', 0)}\")
+        print(f\"Pass Rate: {summary.get('pass_rate', 0):.1f}%\")
+        
+        if summary.get('total_failures', 0) > 0:
+            print(\"\n❌ Failed Tests:\")
+            for test in summary.get('failed_tests', []):
+                print(f\"  • {test}\")
+        else:
+            print(\"\n✅ All tests passed!\")
+except Exception as e:
+    print(f\"Error reading analysis: {e}\")
+"
+        echo ""
+        echo "📁 Full analysis saved to: ai-analysis/analysis-output.json"
+        echo "📋 Debug log saved to: ai-analysis/analysis.log"
+    else
+        echo "⚠️ Analysis output not generated"
+    fi
+else
+    echo "⚠️ No test results found, skipping AI analysis"
+fi
+
+cd ../automationexercise-e2e-pom
+
+echo ""
+echo "================================"
 echo "Test execution completed!"
+echo "================================"
 echo "Reports available in:"
 echo "  - test-reports/ (HTML report)"
 echo "  - allure-report/ (Allure report)"
+echo "  - ../ai-analysis/analysis-output.json (AI Analysis)"

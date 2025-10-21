@@ -421,22 +421,27 @@ jobs:
           # Check if test results exist
           if [ ! -d "../test-artifacts" ] || [ -z "$(ls -A ../test-artifacts 2>/dev/null)" ]; then
             echo "⚠️ No test results found, generating fallback analysis..."
-            python analyze-github.py --fallback > analysis-output.json
+            python3 analyze-github.py --fallback 2>analysis-debug.log 1>analysis-output.json
           else
             echo "✅ Test results found, running AI analysis..."
-            python analyze-github.py --test-results ../test-artifacts > analysis-output.json || \
-              python analyze-github.py --fallback > analysis-output.json
+            # Try with AI first, fallback if fails
+            python3 analyze-github.py --test-results ../test-artifacts 2>analysis-debug.log 1>analysis-output.json || \
+              python3 analyze-github.py --fallback 2>analysis-debug.log 1>analysis-output.json
           fi
           
-          # Display analysis summary
-          echo "## 🤖 AI Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "📋 Debug log:"
+          cat analysis-debug.log
+          
+          # Parse and display analysis summary in GitHub Summary
+          echo "## 🤖 AI Test Failure Analysis" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f "analysis-output.json" ]; then
-            cat analysis-output.json >> $GITHUB_STEP_SUMMARY
+            # Use formatting script to generate markdown
+            python3 format-github-summary.py analysis-output.json >> $GITHUB_STEP_SUMMARY
             echo "✅ AI analysis completed successfully"
           else
-            echo "❌ AI analysis failed to generate output"
+            echo "❌ AI analysis failed to generate output" >> $GITHUB_STEP_SUMMARY
             echo "{\"error\": \"No analysis output generated\"}" > analysis-output.json
           fi
 
