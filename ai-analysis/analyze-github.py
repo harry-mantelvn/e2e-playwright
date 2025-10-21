@@ -568,15 +568,39 @@ def main():
         test_results = {"suites": []}
         output_file = args.output_file or 'analysis-output.json'
     elif args.test_results:
-        # Directory path provided
+        # Directory path provided - search for test results
         import glob
-        json_files = glob.glob(f"{args.test_results}/*.json") or glob.glob(f"{args.test_results}/results.json")
+        test_dir = args.test_results
+        
+        # Try multiple common locations for Playwright test results
+        search_patterns = [
+            f"{test_dir}/*.json",
+            f"{test_dir}/results.json",
+            f"{test_dir}/test-results.json",
+            f"{test_dir}/**/results.json",
+            f"{test_dir}/**/test-results.json",
+            f"{test_dir}/allure-results/**/*.json",
+            f"{test_dir}/test-results/**/*.json"
+        ]
+        
+        json_files = []
+        for pattern in search_patterns:
+            found = glob.glob(pattern, recursive=True)
+            if found:
+                # Filter out non-result files
+                json_files = [f for f in found if any(x in f for x in ['result', 'test', 'suite'])]
+                if json_files:
+                    break
+        
         if json_files:
             input_file = json_files[0]
             print(f"📊 Loading test results from: {input_file}", file=sys.stderr)
+            print(f"   (Found {len(json_files)} result files, using first one)", file=sys.stderr)
             test_results = load_test_results(input_file)
         else:
-            print("⚠️  No test results found in directory, using fallback", file=sys.stderr)
+            print(f"⚠️  No test results found in: {test_dir}", file=sys.stderr)
+            print(f"   Searched patterns: {search_patterns[:3]}...", file=sys.stderr)
+            print("   Using fallback mode", file=sys.stderr)
             test_results = {"suites": []}
         output_file = args.output_file or 'analysis-output.json'
     elif args.input_file:
