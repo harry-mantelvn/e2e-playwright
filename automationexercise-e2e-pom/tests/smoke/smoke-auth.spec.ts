@@ -44,7 +44,7 @@ test.describe('Authentication Smoke Tests', () => {
     });
 
     await test.step('Verify navigation to account information page', async () => {
-      await expect(authPage.currentPage).toHaveURL(/.*signup/);
+      await expect(authPage.currentPage).toHaveURL(/.*signuppp/);
       await authPage.verifyVisible('[data-qa="password"]');
     });
   });
@@ -80,14 +80,14 @@ test.describe('Authentication Smoke Tests', () => {
       // Address information fields
       await authPage.verifyVisible('[data-qa="first_name"]');
       await authPage.verifyVisible('[data-qa="last_name"]');
-      await authPage.verifyVisible('[data-qa="company"]');
-      await authPage.verifyVisible('[data-qa="address"]');
-      await authPage.verifyVisible('[data-qa="country"]');
-      await authPage.verifyVisible('[data-qa="state"]');
-      await authPage.verifyVisible('[data-qa="city"]');
-      await authPage.verifyVisible('[data-qa="zipcode"]');
-      await authPage.verifyVisible('[data-qa="mobile_number"]');
-      
+      await authPage.verifyVisible('[data-qa="company1"]');
+      await authPage.verifyVisible('[data-qa="address1"]');
+      await authPage.verifyVisible('[data-qa="country1"]');
+      await authPage.verifyVisible('[data-qa="state1"]');
+      await authPage.verifyVisible('[data-qa="city1"]');
+      await authPage.verifyVisible('[data-qa="zipcode1"]');
+      await authPage.verifyVisible('[data-qa="mobile_number1"]');
+
       // Submit button
       await authPage.verifyVisible('[data-qa="create-account"]');
     });

@@ -108,39 +108,82 @@ def analyze_with_github_models(test_results, github_token):
                 ]
             }
         
-        # Build prompt for AI
-        prompt = f"""Analyze these Playwright E2E test failures and provide insights:
+        # Build enhanced prompt for deeper analysis
+        prompt = f"""You are a senior QA engineer reviewing CI test results from GitHub Actions.
+Analyze the following Playwright E2E test failures and explain clearly:
+
+1. What failed and why — identify root causes from the logs
+2. Which test suites or files are causing most issues
+3. If the errors are from code, environment, or flaky tests
+4. Steps to reproduce (if identifiable from logs)
+5. Recommended fixes for code or test configuration
+6. Any patterns or recurring failures worth flagging
+
+Keep the response technical and actionable — like a note for another engineer reading the logs.
 
 Test Failures ({len(failures)} total):
 """
         for i, failure in enumerate(failures, 1):
             prompt += f"""
-{i}. Test: {failure['title']}
-   File: {failure['file']}
-   Error: {failure['error']}
-   Duration: {failure['duration']}ms
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Failure #{i}:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Test:     {failure['title']}
+File:     {failure['file']}
+Status:   {failure.get('status', 'failed').upper()}
+Duration: {failure['duration']}ms
+
+Error Log:
+{failure['error']}
 """
         
         prompt += """
 
-Please provide:
-1. Root cause analysis for each failure
-2. Common patterns across failures
-3. Actionable recommendations to fix
-4. Priority order (high/medium/low)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Format response as JSON with this structure:
+Provide analysis in JSON format with this structure:
 {
   "failures_analysis": [
     {
       "test_title": "...",
-      "root_cause": "...",
-      "recommended_fix": "...",
-      "priority": "high|medium|low"
+      "failure_category": "code|environment|flaky|configuration",
+      "root_cause": "Technical explanation of why it failed",
+      "affected_component": "What part of the system/test is broken",
+      "reproduction_steps": ["Step 1", "Step 2", "..."],
+      "recommended_fix": "Specific code or config changes needed",
+      "code_example": "// Example fix if applicable",
+      "priority": "critical|high|medium|low",
+      "estimated_effort": "Time estimate to fix"
     }
   ],
-  "common_patterns": ["..."],
-  "recommendations": ["..."]
+  "suite_health": {
+    "most_problematic_files": ["file1", "file2"],
+    "failure_hotspots": ["area1", "area2"]
+  },
+  "common_patterns": [
+    {
+      "pattern": "Pattern description",
+      "occurrences": 0,
+      "likely_cause": "Why this is happening",
+      "impact": "Effect on test suite"
+    }
+  ],
+  "environment_issues": [
+    "List any environment-related problems detected"
+  ],
+  "flaky_test_indicators": [
+    "Signs of test flakiness if any"
+  ],
+  "immediate_actions": [
+    {
+      "action": "What to do first",
+      "reason": "Why it's urgent",
+      "impact": "What it will fix"
+    }
+  ],
+  "long_term_recommendations": [
+    "Suggestions for improving test reliability"
+  ]
 }
 """
         
@@ -198,6 +241,14 @@ Format response as JSON with this structure:
                 "low": sum(1 for f in detailed_failures if f['severity'] == 'low')
             }
             
+            # Categorize failures
+            failure_categories = {
+                "code": sum(1 for f in ai_analysis.get('failures_analysis', []) if f.get('failure_category') == 'code'),
+                "environment": sum(1 for f in ai_analysis.get('failures_analysis', []) if f.get('failure_category') == 'environment'),
+                "flaky": sum(1 for f in ai_analysis.get('failures_analysis', []) if f.get('failure_category') == 'flaky'),
+                "configuration": sum(1 for f in ai_analysis.get('failures_analysis', []) if f.get('failure_category') == 'configuration')
+            }
+            
             return {
                 "analysis_metadata": {
                     "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -205,23 +256,34 @@ Format response as JSON with this structure:
                     "ai_provider": "github-copilot",
                     "model": "gpt-4o",
                     "token_usage": ai_response.get('usage', {}),
-                    "version": "2.0"
+                    "version": "3.0",
+                    "analysis_depth": "senior-qa-review"
                 },
                 "executive_summary": {
                     "total_failures": len(failures),
                     "critical_issues": severity_count['high'],
-                    "needs_immediate_action": severity_count['high'] > 0,
+                    "needs_immediate_action": severity_count['high'] > 0 or failure_categories.get('code', 0) > 0,
                     "estimated_fix_time_minutes": 5 * severity_count['high'] + 2 * severity_count['medium'],
                     "test_health_score": max(0, 100 - (severity_count['high'] * 30 + severity_count['medium'] * 10)),
-                    "ai_confidence": "high"
+                    "ai_confidence": "high",
+                    "failure_categories": failure_categories,
+                    "most_problematic_files": ai_analysis.get('suite_health', {}).get('most_problematic_files', [])
                 },
                 "failure_breakdown": {
                     "by_severity": severity_count,
+                    "by_category": failure_categories,
                     "total_duration_ms": sum(f['duration_ms'] for f in detailed_failures)
                 },
                 "detailed_analysis": detailed_failures,
-                "ai_insights": ai_analysis,
-                "actionable_recommendations": ai_analysis.get('recommendations', [])
+                "ai_deep_analysis": {
+                    "failures_analysis": ai_analysis.get('failures_analysis', []),
+                    "suite_health": ai_analysis.get('suite_health', {}),
+                    "common_patterns": ai_analysis.get('common_patterns', []),
+                    "environment_issues": ai_analysis.get('environment_issues', []),
+                    "flaky_test_indicators": ai_analysis.get('flaky_test_indicators', [])
+                },
+                "immediate_actions": ai_analysis.get('immediate_actions', []),
+                "actionable_recommendations": ai_analysis.get('immediate_actions', []) + ai_analysis.get('long_term_recommendations', [])[:3]
             }
         else:
             print(f"⚠️  GitHub Models API error: {response.status_code}")
@@ -404,33 +466,83 @@ def create_fallback_analysis(failures):
     total_duration = sum(f['duration_ms'] for f in detailed_failures)
     avg_duration = total_duration / len(detailed_failures) if detailed_failures else 0
     
+    # Categorize by failure type for suite health
+    problematic_files = {}
+    for f in detailed_failures:
+        file = f.get('file', 'Unknown')
+        problematic_files[file] = problematic_files.get(file, 0) + 1
+    
+    most_problematic = sorted(problematic_files.items(), key=lambda x: x[1], reverse=True)
+    
+    # Identify flaky test indicators
+    flaky_indicators = []
+    if any('intermittent' in f.get('error', '').lower() for f in failures):
+        flaky_indicators.append("Intermittent failures detected in error messages")
+    if patterns['timeout_failures'] > 2:
+        flaky_indicators.append("Multiple timeout failures may indicate timing issues")
+    
+    # Identify environment issues
+    env_issues = []
+    if any('network' in f.get('error', '').lower() for f in failures):
+        env_issues.append("Network-related errors detected - check CI environment connectivity")
+    if patterns['selector_issues'] > 0:
+        env_issues.append("Selector issues may be due to different DOM state in CI vs local")
+    
     return {
         "analysis_metadata": {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "status": "success",
             "analysis_engine": "pattern-based-advanced",
             "message": "Professional analysis without AI (fallback mode)",
-            "version": "2.0"
+            "version": "3.0",
+            "analysis_depth": "senior-qa-review"
         },
         "executive_summary": {
             "total_failures": len(failures),
             "critical_issues": severity_count['high'],
             "needs_immediate_action": severity_count['high'] > 0,
             "estimated_fix_time_minutes": 5 * severity_count['high'] + 2 * severity_count['medium'],
-            "test_health_score": max(0, 100 - (severity_count['high'] * 30 + severity_count['medium'] * 10))
+            "test_health_score": max(0, 100 - (severity_count['high'] * 30 + severity_count['medium'] * 10)),
+            "most_problematic_files": [f[0] for f in most_problematic[:3]],
+            "failure_categories": {
+                "code": len([f for f in detailed_failures if f['failure_type'] in ['selector', 'assertion']]),
+                "environment": len([f for f in detailed_failures if f['failure_type'] == 'network']),
+                "flaky": 0,
+                "configuration": len([f for f in detailed_failures if f['failure_type'] == 'timeout'])
+            }
         },
         "failure_breakdown": {
             "by_type": patterns,
             "by_severity": severity_count,
-            "average_failure_duration_ms": int(avg_duration)
+            "average_failure_duration_ms": int(avg_duration),
+            "by_category": {
+                "code_issues": patterns['selector_issues'] + patterns['assertion_failures'],
+                "timeout_issues": patterns['timeout_failures'],
+                "network_issues": patterns['network_issues']
+            }
         },
         "detailed_analysis": detailed_failures,
+        "suite_health": {
+            "most_problematic_files": [f[0] for f in most_problematic[:3]],
+            "failure_hotspots": [f['file'] for f in detailed_failures if f['severity'] == 'high'],
+            "total_affected_files": len(problematic_files)
+        },
         "common_issues": common_issues,
+        "environment_issues": env_issues,
+        "flaky_test_indicators": flaky_indicators,
+        "immediate_actions": [
+            {
+                "action": rec["action"],
+                "reason": rec.get("impact", "Improves test stability"),
+                "impact": f"Fixes {rec.get('count', 1)} failures" if "count" in rec else "Improves reliability"
+            }
+            for rec in recommendations[:2] if rec.get("priority", "").startswith("P0") or rec.get("priority", "").startswith("P1")
+        ],
         "actionable_recommendations": recommendations,
         "quick_wins": [
             {
                 "action": "Fix selector typos",
-                "files": ["tests/smoke/smoke-home.spec.ts"],
+                "files": list(set(f['file'] for f in typo_selectors)),
                 "effort": "5 minutes",
                 "impact": "Resolves 100% of current failures"
             }
@@ -545,6 +657,25 @@ def main():
         print(f"Test Health Score:        {summary.get('test_health_score', 0)}/100", file=sys.stderr)
         print(f"Estimated Fix Time:       {summary.get('estimated_fix_time_minutes', 0)} minutes", file=sys.stderr)
         
+        # Show failure categories
+        if 'failure_categories' in summary:
+            cats = summary['failure_categories']
+            print(f"\nFailure Categories:", file=sys.stderr)
+            if cats.get('code', 0) > 0:
+                print(f"  • Code Issues:         {cats['code']}", file=sys.stderr)
+            if cats.get('environment', 0) > 0:
+                print(f"  • Environment:         {cats['environment']}", file=sys.stderr)
+            if cats.get('flaky', 0) > 0:
+                print(f"  • Flaky Tests:         {cats['flaky']}", file=sys.stderr)
+            if cats.get('configuration', 0) > 0:
+                print(f"  • Configuration:       {cats['configuration']}", file=sys.stderr)
+        
+        # Show most problematic files
+        if summary.get('most_problematic_files'):
+            print(f"\nMost Problematic Files:", file=sys.stderr)
+            for f in summary['most_problematic_files'][:3]:
+                print(f"  • {f}", file=sys.stderr)
+        
         if summary.get('needs_immediate_action'):
             print(f"\n⚠️  ACTION REQUIRED: {summary.get('critical_issues', 0)} critical issues need immediate attention!", file=sys.stderr)
         else:
@@ -559,11 +690,25 @@ def main():
             print(f"   Root Cause: {failure.get('root_cause', 'N/A')}", file=sys.stderr)
             print(f"   Fix: {failure.get('fix_suggestion', 'N/A')}", file=sys.stderr)
     
+    # Show immediate actions first (most urgent)
+    if 'immediate_actions' in analysis and analysis['immediate_actions']:
+        print("\n" + "-"*70, file=sys.stderr)
+        print("IMMEDIATE ACTIONS REQUIRED", file=sys.stderr)
+        print("-"*70, file=sys.stderr)
+        for i, action in enumerate(analysis['immediate_actions'][:3], 1):
+            if isinstance(action, dict):
+                print(f"\n{i}. {action.get('action', 'N/A')}", file=sys.stderr)
+                print(f"   Reason: {action.get('reason', 'N/A')}", file=sys.stderr)
+                print(f"   Impact: {action.get('impact', 'N/A')}", file=sys.stderr)
+            else:
+                print(f"{i}. {action}", file=sys.stderr)
+    
+    # Show all recommendations
     if 'actionable_recommendations' in analysis and analysis['actionable_recommendations']:
         print("\n" + "-"*70, file=sys.stderr)
-        print("RECOMMENDED ACTIONS", file=sys.stderr)
+        print("ALL RECOMMENDED ACTIONS", file=sys.stderr)
         print("-"*70, file=sys.stderr)
-        for i, rec in enumerate(analysis['actionable_recommendations'][:3], 1):
+        for i, rec in enumerate(analysis['actionable_recommendations'][:5], 1):
             if isinstance(rec, dict):
                 print(f"{i}. [{rec.get('priority', 'N/A')}] {rec.get('action', 'N/A')}", file=sys.stderr)
             else:
