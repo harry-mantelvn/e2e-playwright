@@ -406,24 +406,55 @@ def create_fallback_analysis(failures):
 
 def main():
     """Main execution"""
-    if len(sys.argv) < 3:
-        print("Usage: python analyze-github.py <test-results.json> <output.json>")
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='AI Test Analysis')
+    parser.add_argument('input_file', nargs='?', help='Test results JSON file')
+    parser.add_argument('output_file', nargs='?', default='analysis-output.json', help='Output JSON file')
+    parser.add_argument('--fallback', action='store_true', help='Use fallback analysis mode')
+    parser.add_argument('--test-results', help='Path to test results directory')
+    
+    args = parser.parse_args()
+    
+    # Handle different argument patterns
+    if args.fallback:
+        # Fallback mode - create sample analysis
+        print("⚠️  Running in fallback mode (no test results)", file=sys.stderr)
+        test_results = {"suites": []}
+        output_file = args.output_file or 'analysis-output.json'
+    elif args.test_results:
+        # Directory path provided
+        import glob
+        json_files = glob.glob(f"{args.test_results}/*.json") or glob.glob(f"{args.test_results}/results.json")
+        if json_files:
+            input_file = json_files[0]
+            print(f"📊 Loading test results from: {input_file}", file=sys.stderr)
+            test_results = load_test_results(input_file)
+        else:
+            print("⚠️  No test results found in directory, using fallback", file=sys.stderr)
+            test_results = {"suites": []}
+        output_file = args.output_file or 'analysis-output.json'
+    elif args.input_file:
+        # Traditional mode - file paths
+        input_file = args.input_file
+        output_file = args.output_file or 'analysis-output.json'
+        print(f"📊 Loading test results from: {input_file}", file=sys.stderr)
+        test_results = load_test_results(input_file)
+    else:
+        print("❌ Error: No input provided", file=sys.stderr)
+        print("Usage: python analyze-github.py <test-results.json> <output.json>", file=sys.stderr)
+        print("   or: python analyze-github.py --fallback", file=sys.stderr)
+        print("   or: python analyze-github.py --test-results <directory>", file=sys.stderr)
         sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    
-    print(f"📊 Loading test results from: {input_file}")
-    test_results = load_test_results(input_file)
     
     # Get GitHub token from environment
     github_token = os.getenv('GITHUB_TOKEN')
     
     if github_token:
-        print("🤖 Using GitHub Copilot/Models for AI analysis...")
+        print("🤖 Using GitHub Copilot/Models for AI analysis...", file=sys.stderr)
         analysis = analyze_with_github_models(test_results, github_token)
     else:
-        print("⚠️  GITHUB_TOKEN not found, using fallback analysis")
+        print("⚠️  GITHUB_TOKEN not found, using fallback analysis", file=sys.stderr)
         
         # Extract failures for fallback
         failures = []
@@ -441,57 +472,60 @@ def main():
         analysis = create_fallback_analysis(failures)
     
     # Write output
-    print(f"💾 Writing analysis to: {output_file}")
+    print(f"💾 Writing analysis to: {output_file}", file=sys.stderr)
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(analysis, f, indent=2, ensure_ascii=False)
     
-    # Print summary
-    print("\n" + "="*70)
-    print("📊 AI TEST ANALYSIS REPORT")
-    print("="*70)
+    # Also print to stdout for workflow capture
+    print(json.dumps(analysis, indent=2, ensure_ascii=False))
+    
+    # Print summary to stderr so it shows in logs
+    print("\n" + "="*70, file=sys.stderr)
+    print("📊 AI TEST ANALYSIS REPORT", file=sys.stderr)
+    print("="*70, file=sys.stderr)
     
     metadata = analysis['analysis_metadata']
-    print(f"Timestamp:     {metadata['timestamp']}")
-    print(f"Status:        {metadata['status']}")
-    print(f"Engine:        {metadata.get('ai_provider', metadata.get('analysis_engine', 'N/A'))}")
+    print(f"Timestamp:     {metadata['timestamp']}", file=sys.stderr)
+    print(f"Status:        {metadata['status']}", file=sys.stderr)
+    print(f"Engine:        {metadata.get('ai_provider', metadata.get('analysis_engine', 'N/A'))}", file=sys.stderr)
     
     if 'executive_summary' in analysis:
         summary = analysis['executive_summary']
-        print("\n" + "-"*70)
-        print("EXECUTIVE SUMMARY")
-        print("-"*70)
-        print(f"Total Failures:           {summary.get('total_failures', 0)}")
-        print(f"Critical Issues:          {summary.get('critical_issues', 0)}")
-        print(f"Test Health Score:        {summary.get('test_health_score', 0)}/100")
-        print(f"Estimated Fix Time:       {summary.get('estimated_fix_time_minutes', 0)} minutes")
+        print("\n" + "-"*70, file=sys.stderr)
+        print("EXECUTIVE SUMMARY", file=sys.stderr)
+        print("-"*70, file=sys.stderr)
+        print(f"Total Failures:           {summary.get('total_failures', 0)}", file=sys.stderr)
+        print(f"Critical Issues:          {summary.get('critical_issues', 0)}", file=sys.stderr)
+        print(f"Test Health Score:        {summary.get('test_health_score', 0)}/100", file=sys.stderr)
+        print(f"Estimated Fix Time:       {summary.get('estimated_fix_time_minutes', 0)} minutes", file=sys.stderr)
         
         if summary.get('needs_immediate_action'):
-            print(f"\n⚠️  ACTION REQUIRED: {summary.get('critical_issues', 0)} critical issues need immediate attention!")
+            print(f"\n⚠️  ACTION REQUIRED: {summary.get('critical_issues', 0)} critical issues need immediate attention!", file=sys.stderr)
         else:
-            print(f"\n✅ {summary.get('message', 'Analysis complete')}")
+            print(f"\n✅ {summary.get('message', 'Analysis complete')}", file=sys.stderr)
     
     if 'detailed_analysis' in analysis and analysis['detailed_analysis']:
-        print("\n" + "-"*70)
-        print("TOP ISSUES")
-        print("-"*70)
+        print("\n" + "-"*70, file=sys.stderr)
+        print("TOP ISSUES", file=sys.stderr)
+        print("-"*70, file=sys.stderr)
         for i, failure in enumerate(analysis['detailed_analysis'][:3], 1):
-            print(f"\n{i}. [{failure.get('severity', 'N/A').upper()}] {failure.get('test_title', 'Unknown')}")
-            print(f"   Root Cause: {failure.get('root_cause', 'N/A')}")
-            print(f"   Fix: {failure.get('fix_suggestion', 'N/A')}")
+            print(f"\n{i}. [{failure.get('severity', 'N/A').upper()}] {failure.get('test_title', 'Unknown')}", file=sys.stderr)
+            print(f"   Root Cause: {failure.get('root_cause', 'N/A')}", file=sys.stderr)
+            print(f"   Fix: {failure.get('fix_suggestion', 'N/A')}", file=sys.stderr)
     
     if 'actionable_recommendations' in analysis and analysis['actionable_recommendations']:
-        print("\n" + "-"*70)
-        print("RECOMMENDED ACTIONS")
-        print("-"*70)
+        print("\n" + "-"*70, file=sys.stderr)
+        print("RECOMMENDED ACTIONS", file=sys.stderr)
+        print("-"*70, file=sys.stderr)
         for i, rec in enumerate(analysis['actionable_recommendations'][:3], 1):
             if isinstance(rec, dict):
-                print(f"{i}. [{rec.get('priority', 'N/A')}] {rec.get('action', 'N/A')}")
+                print(f"{i}. [{rec.get('priority', 'N/A')}] {rec.get('action', 'N/A')}", file=sys.stderr)
             else:
-                print(f"{i}. {rec}")
+                print(f"{i}. {rec}", file=sys.stderr)
     
-    print("\n" + "="*70)
-    print(f"✅ Full report saved to: {output_file}")
-    print("="*70)
+    print("\n" + "="*70, file=sys.stderr)
+    print(f"✅ Full report saved to: {output_file}", file=sys.stderr)
+    print("="*70, file=sys.stderr)
 
 if __name__ == '__main__':
     main()
