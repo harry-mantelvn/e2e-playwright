@@ -1,0 +1,33 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-10-21T03:38:22.228628Z",
+    "status": "fallback",
+    "message": "Using statistical analysis (AI unavailable)"
+  },
+  "summary": {
+    "ai_enabled": false,
+    "total_failures_analyzed": 2,
+    "analysis_type": "pattern-based"
+  },
+  "test_failures": [
+    {
+      "title": "should load home page successfully",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "error": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/productsdd\"]')\n============================================================\n\nCall log:\n  - waiting for locator('a[href=\"/productsdd\"]')\n  -   locator resolved to <a href=\"/products\">Products</a>\n  -   attempting click action\n  -   waiting for element to be visible, enabled and stable\n  -   element is not visible - waiting...\n  -   element is visible\n  -   element is outside of the viewport - scrolling...\n  - unexpected timeout"
+    },
+    {
+      "title": "should navigate to products page",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "error": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/loginssss\"]')\n============================================================"
+    }
+  ],
+  "patterns_detected": [
+    "⏱️  Multiple timeout failures detected"
+  ],
+  "recommendations": [
+    "🔍 Review test selectors for stability",
+    "⏱️  Increase timeout values if needed",
+    "🔄 Check for race conditions",
+    "📊 Review test data and fixtures"
+  ]
+}

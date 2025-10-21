@@ -1,0 +1,79 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-10-21T03:49:36.184992Z",
+    "status": "success",
+    "analysis_engine": "pattern-based-advanced",
+    "message": "Professional analysis without AI (fallback mode)",
+    "version": "2.0"
+  },
+  "executive_summary": {
+    "total_failures": 2,
+    "critical_issues": 0,
+    "needs_immediate_action": false,
+    "estimated_fix_time_minutes": 4,
+    "test_health_score": 80
+  },
+  "failure_breakdown": {
+    "by_type": {
+      "timeout_failures": 2,
+      "selector_issues": 0,
+      "network_issues": 0,
+      "assertion_failures": 0
+    },
+    "by_severity": {
+      "high": 0,
+      "medium": 2,
+      "low": 0
+    },
+    "average_failure_duration_ms": 0
+  },
+  "detailed_analysis": [
+    {
+      "test_title": "should load home page successfully",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "failure_type": "timeout",
+      "severity": "medium",
+      "root_cause": "Element not found within timeout period",
+      "fix_suggestion": "Increase timeout or add explicit wait for element",
+      "affected_selector": null,
+      "code_example": "// Add explicit wait\nawait page.waitForSelector('selector', { timeout: 10000 });\nawait page.click('selector');",
+      "duration_ms": 0,
+      "error_snippet": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/productsdd\"]')\n======================================================..."
+    },
+    {
+      "test_title": "should navigate to products page",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "failure_type": "timeout",
+      "severity": "medium",
+      "root_cause": "Element not found within timeout period",
+      "fix_suggestion": "Increase timeout or add explicit wait for element",
+      "affected_selector": null,
+      "code_example": "// Add explicit wait\nawait page.waitForSelector('selector', { timeout: 10000 });\nawait page.click('selector');",
+      "duration_ms": 0,
+      "error_snippet": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/loginssss\"]')\n=======================================================..."
+    }
+  ],
+  "common_issues": [
+    {
+      "issue": "Multiple timeout failures",
+      "count": 2,
+      "impact": "high",
+      "recommendation": "Review selectors for typos and increase base timeout if needed"
+    }
+  ],
+  "actionable_recommendations": [
+    {
+      "priority": "P1 - High",
+      "action": "Review timeout configuration",
+      "details": "Consider increasing default timeout or adding explicit waits",
+      "config_suggestion": "// playwright.config.ts\nuse: {\n  timeout: 10000, // Increase from 5000\n}"
+    },
+    {
+      "priority": "P2 - Medium",
+      "action": "Improve selector strategy",
+      "details": "Use data-testid or getByRole for more stable selectors",
+      "example": "await page.getByRole('link', { name: 'Products' }).click();"
+    }
+  ],
+  "quick_wins": []
+}

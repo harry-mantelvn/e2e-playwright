@@ -1,0 +1,106 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-10-21T03:51:43.424657Z",
+    "status": "success",
+    "analysis_engine": "pattern-based-advanced",
+    "message": "Professional analysis without AI (fallback mode)",
+    "version": "2.0"
+  },
+  "executive_summary": {
+    "total_failures": 2,
+    "critical_issues": 0,
+    "needs_immediate_action": false,
+    "estimated_fix_time_minutes": 4,
+    "test_health_score": 80
+  },
+  "failure_breakdown": {
+    "by_type": {
+      "timeout_failures": 2,
+      "selector_issues": 0,
+      "network_issues": 0,
+      "assertion_failures": 0
+    },
+    "by_severity": {
+      "high": 0,
+      "medium": 2,
+      "low": 0
+    },
+    "average_failure_duration_ms": 0
+  },
+  "detailed_analysis": [
+    {
+      "test_title": "should load home page successfully",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "failure_type": "timeout",
+      "severity": "medium",
+      "root_cause": "Incorrect selector path - typo in URL",
+      "fix_suggestion": "Fix the selector path by removing typo",
+      "affected_selector": "a[href=\"/productsdd\"]",
+      "code_example": "// ❌ Wrong\nawait page.click('a[href=\"/productsdd\"]');\n\n// ✅ Correct\nawait page.click('a[href=\"/products\"]');",
+      "duration_ms": 0,
+      "error_snippet": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/productsdd\"]')\n======================================================..."
+    },
+    {
+      "test_title": "should navigate to products page",
+      "file": "tests/smoke/smoke-home.spec.ts",
+      "failure_type": "timeout",
+      "severity": "medium",
+      "root_cause": "Incorrect selector path - typo in URL",
+      "fix_suggestion": "Fix the selector path by removing typo",
+      "affected_selector": "a[href=\"/loginssss\"]",
+      "code_example": "// ❌ Wrong\nawait page.click('a[href=\"/loginssss\"]');\n\n// ✅ Correct\nawait page.click('a[href=\"/login\"]');",
+      "duration_ms": 0,
+      "error_snippet": "locator.click: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for locator('a[href=\"/loginssss\"]')\n=======================================================..."
+    }
+  ],
+  "common_issues": [
+    {
+      "issue": "Multiple timeout failures",
+      "count": 2,
+      "impact": "high",
+      "recommendation": "Review selectors for typos and increase base timeout if needed"
+    },
+    {
+      "issue": "Typos in selectors detected",
+      "count": 2,
+      "impact": "critical",
+      "recommendation": "Fix selector typos immediately - this is causing test failures",
+      "examples": [
+        "a[href=\"/productsdd\"]",
+        "a[href=\"/loginssss\"]"
+      ]
+    }
+  ],
+  "actionable_recommendations": [
+    {
+      "priority": "P0 - Critical",
+      "action": "Fix selector typos in smoke tests",
+      "files_affected": [
+        "tests/smoke/smoke-home.spec.ts"
+      ],
+      "estimated_fix_time": "5 minutes"
+    },
+    {
+      "priority": "P1 - High",
+      "action": "Review timeout configuration",
+      "details": "Consider increasing default timeout or adding explicit waits",
+      "config_suggestion": "// playwright.config.ts\nuse: {\n  timeout: 10000, // Increase from 5000\n}"
+    },
+    {
+      "priority": "P2 - Medium",
+      "action": "Improve selector strategy",
+      "details": "Use data-testid or getByRole for more stable selectors",
+      "example": "await page.getByRole('link', { name: 'Products' }).click();"
+    }
+  ],
+  "quick_wins": [
+    {
+      "action": "Fix selector typos",
+      "files": [
+        "tests/smoke/smoke-home.spec.ts"
+      ],
+      "effort": "5 minutes",
+      "impact": "Resolves 100% of current failures"
+    }
+  ]
+}
