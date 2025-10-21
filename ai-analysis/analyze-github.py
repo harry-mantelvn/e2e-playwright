@@ -14,12 +14,32 @@ def load_test_results(json_path):
     """Load Playwright test results from JSON"""
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            
+        # Debug: Print what we loaded
+        print(f"📋 Loaded test results:", file=sys.stderr)
+        print(f"   - Suites: {len(data.get('suites', []))}", file=sys.stderr)
+        
+        # Count total tests and failures
+        total_tests = 0
+        failed_tests = 0
+        for suite in data.get('suites', []):
+            for spec in suite.get('specs', []):
+                for test in spec.get('tests', []):
+                    total_tests += 1
+                    for result in test.get('results', []):
+                        if result.get('status') in ['failed', 'timedOut']:
+                            failed_tests += 1
+        
+        print(f"   - Total tests: {total_tests}", file=sys.stderr)
+        print(f"   - Failed tests: {failed_tests}", file=sys.stderr)
+        
+        return data
     except FileNotFoundError:
-        print(f"❌ Error: Test results file not found: {json_path}")
+        print(f"❌ Error: Test results file not found: {json_path}", file=sys.stderr)
         sys.exit(1)
     except json.JSONDecodeError as e:
-        print(f"❌ Error: Invalid JSON in {json_path}: {e}")
+        print(f"❌ Error: Invalid JSON in {json_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
 def analyze_with_github_models(test_results, github_token):
@@ -36,13 +56,26 @@ def analyze_with_github_models(test_results, github_token):
             for spec in suite.get('specs', []):
                 for test in spec.get('tests', []):
                     for result in test.get('results', []):
-                        if result.get('status') in ['failed', 'timedOut']:
+                        status = result.get('status', '')
+                        if status in ['failed', 'timedOut']:
+                            # Extract error message properly
+                            error_obj = result.get('error', {})
+                            error_msg = 'No error message'
+                            
+                            if isinstance(error_obj, dict):
+                                error_msg = error_obj.get('message', error_obj.get('value', 'No error message'))
+                            elif isinstance(error_obj, str):
+                                error_msg = error_obj
+                            
                             failures.append({
                                 'title': test.get('title', 'Unknown'),
                                 'file': spec.get('file', 'Unknown'),
-                                'error': result.get('error', {}).get('message', 'No error message'),
-                                'duration': result.get('duration', 0)
+                                'error': error_msg,
+                                'duration': result.get('duration', 0),
+                                'status': status
                             })
+        
+        print(f"🔍 Found {len(failures)} failures to analyze", file=sys.stderr)
         
         if not failures:
             return {
@@ -462,13 +495,26 @@ def main():
             for spec in suite.get('specs', []):
                 for test in spec.get('tests', []):
                     for result in test.get('results', []):
-                        if result.get('status') in ['failed', 'timedOut']:
+                        status = result.get('status', '')
+                        if status in ['failed', 'timedOut']:
+                            # Extract error message properly
+                            error_obj = result.get('error', {})
+                            error_msg = 'No error message'
+                            
+                            if isinstance(error_obj, dict):
+                                error_msg = error_obj.get('message', error_obj.get('value', 'No error message'))
+                            elif isinstance(error_obj, str):
+                                error_msg = error_obj
+                            
                             failures.append({
                                 'title': test.get('title', 'Unknown'),
                                 'file': spec.get('file', 'Unknown'),
-                                'error': result.get('error', {}).get('message', 'No error message')
+                                'error': error_msg,
+                                'duration': result.get('duration', 0),
+                                'status': status
                             })
         
+        print(f"🔍 Found {len(failures)} failures for fallback analysis", file=sys.stderr)
         analysis = create_fallback_analysis(failures)
     
     # Write output
