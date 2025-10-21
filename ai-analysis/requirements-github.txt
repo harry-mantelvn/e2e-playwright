@@ -1,0 +1,4 @@
+# Python dependencies for GitHub Copilot/Models AI analysis
+# Zero-cost, no API key required - uses GITHUB_TOKEN
+
+requests>=2.31.0
