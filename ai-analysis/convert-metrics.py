@@ -99,8 +99,14 @@ def convert_metrics_to_playwright_format(metrics_path: str, output_path: str) ->
         # Build Playwright-compatible JSON structure
         suites = []
         
+        print(f"🔍 Data available:")
+        print(f"   - test_files: {len(test_files)} files")
+        print(f"   - failed_test_details: {len(failed_test_details)} failures")
+        print(f"   - Total test cases: {total_tests}")
+        
         # If we have test_files array, use it
         if test_files:
+            print(f"📁 Processing {len(test_files)} test files...")
             for file_info in test_files:
                 file_path = file_info.get('file', 'unknown')
                 file_status = file_info.get('status', 'unknown')
@@ -186,6 +192,74 @@ def convert_metrics_to_playwright_format(metrics_path: str, output_path: str) ->
                     "line": 0,
                     "specs": [{
                         "title": f"{passed_tests} tests passed",
+                        "ok": True,
+                        "tests": [{
+                            "expectedStatus": "passed",
+                            "timeout": 30000,
+                            "annotations": [],
+                            "projectName": "chromium",
+                            "results": [{
+                                "workerIndex": 0,
+                                "status": "passed",
+                                "duration": 0,
+                                "errors": [],
+                                "stderr": [],
+                                "stdout": []
+                            }],
+                            "status": "passed"
+                        }],
+                        "file": "tests/passed",
+                        "line": 0,
+                        "column": 0
+                    }]
+                }
+                suites.append(suite)
+        
+        # Fallback: if no test_files and no failed_test_details, create from stats
+        else:
+            print(f"⚠️  No test_files or failed_test_details found!")
+            print(f"📊 Creating suites from stats only...")
+            
+            # Create aggregate suites based on pass/fail counts
+            if failed_tests > 0:
+                suite = {
+                    "title": "Failed Tests",
+                    "file": "tests/failed",
+                    "column": 0,
+                    "line": 0,
+                    "specs": [{
+                        "title": f"{failed_tests} test(s) failed",
+                        "ok": False,
+                        "tests": [{
+                            "expectedStatus": "passed",
+                            "timeout": 30000,
+                            "annotations": [],
+                            "projectName": "chromium",
+                            "results": [{
+                                "workerIndex": 0,
+                                "status": "failed",
+                                "duration": 0,
+                                "errors": [{"message": "Test failed - details not available in metrics"}],
+                                "stderr": [],
+                                "stdout": []
+                            }],
+                            "status": "failed"
+                        }],
+                        "file": "tests/failed",
+                        "line": 0,
+                        "column": 0
+                    }]
+                }
+                suites.append(suite)
+            
+            if passed_tests > 0:
+                suite = {
+                    "title": "Passed Tests",
+                    "file": "tests/passed",
+                    "column": 0,
+                    "line": 0,
+                    "specs": [{
+                        "title": f"{passed_tests} test(s) passed",
                         "ok": True,
                         "tests": [{
                             "expectedStatus": "passed",
