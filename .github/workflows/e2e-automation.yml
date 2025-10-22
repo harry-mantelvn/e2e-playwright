@@ -140,6 +140,45 @@ jobs:
           npm run email:generate || echo "Basic email report generation failed, continuing..."
         continue-on-error: true
 
+      - name: Generate JSON Test Results for AI Analysis
+        if: always()
+        run: |
+          cd automationexercise-e2e-pom
+          echo "🔍 Generating JSON test results for AI analysis..."
+          
+          # Create directory for JSON results
+          mkdir -p test-results-json
+          
+          # Try to extract data from test-summary/metrics.json
+          if [ -f "test-summary/metrics.json" ]; then
+            echo "📊 Found metrics.json, converting to Playwright format..."
+            python3 ../ai-analysis/convert-metrics.py test-summary/metrics.json test-results-json/playwright-results.json || \
+              cp test-summary/metrics.json test-results-json/playwright-results.json
+          fi
+          
+          # If not available, create minimal valid JSON
+          if [ ! -f "test-results-json/playwright-results.json" ]; then
+            echo "⚠️  Creating minimal placeholder JSON..."
+            echo '{"suites":[],"stats":{"expected":0,"unexpected":0,"flaky":0,"skipped":0}}' > test-results-json/playwright-results.json
+          fi
+          
+          # Verify and display
+          if [ -f "test-results-json/playwright-results.json" ]; then
+            echo "✅ JSON results created successfully"
+            ls -lh test-results-json/playwright-results.json
+            echo "First 30 lines of JSON:"
+            head -30 test-results-json/playwright-results.json
+          fi
+        continue-on-error: true
+      
+      - name: Upload JSON Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-test-results-${{ github.run_number }}
+          path: automationexercise-e2e-pom/test-results-json/
+          retention-days: 30
+
       - name: Upload Allure Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -395,7 +434,7 @@ jobs:
       - name: Download test artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: test-results-*
+          pattern: json-test-results-*
           path: ./test-artifacts
           merge-multiple: true
 
@@ -418,19 +457,30 @@ jobs:
         run: |
           cd ai-analysis
           
-          # Check if test results exist
-          if [ ! -d "../test-artifacts" ] || [ -z "$(ls -A ../test-artifacts 2>/dev/null)" ]; then
-            echo "⚠️ No test results found, generating fallback analysis..."
-            python3 analyze-github.py --fallback 2>analysis-debug.log 1>analysis-output.json
-          else
+          echo "🔍 Checking for test results..."
+          ls -la ../test-artifacts/ || echo "No test-artifacts directory"
+          find ../test-artifacts/ -type f -name "*.json" 2>/dev/null || echo "No JSON files found"
+          
+          # Check if test results exist and find JSON files
+          if [ -d "../test-artifacts" ] && [ -n "$(find ../test-artifacts/ -name '*.json' 2>/dev/null)" ]; then
             echo "✅ Test results found, running AI analysis..."
+            
+            # Find the JSON file
+            JSON_FILE=$(find ../test-artifacts/ -name "*.json" -type f | head -1)
+            echo "📊 Using test results from: $JSON_FILE"
+            
             # Try with AI first, fallback if fails
-            python3 analyze-github.py --test-results ../test-artifacts 2>analysis-debug.log 1>analysis-output.json || \
+            python3 analyze-github.py "$JSON_FILE" 2>analysis-debug.log 1>analysis-output.json || \
               python3 analyze-github.py --fallback 2>analysis-debug.log 1>analysis-output.json
+          else
+            echo "⚠️ No test results found, using fallback analysis..."
+            python3 analyze-github.py --fallback 2>analysis-debug.log 1>analysis-output.json
           fi
           
+          echo ""
           echo "📋 Debug log:"
           cat analysis-debug.log
+          echo ""
           
           # Parse and display analysis summary in GitHub Summary
           echo "## 🤖 AI Test Failure Analysis" >> $GITHUB_STEP_SUMMARY
@@ -442,7 +492,7 @@ jobs:
             echo "✅ AI analysis completed successfully"
           else
             echo "❌ AI analysis failed to generate output" >> $GITHUB_STEP_SUMMARY
-            echo "{\"error\": \"No analysis output generated\"}" > analysis-output.json
+            echo '{"error": "No analysis output generated"}' > analysis-output.json
           fi
 
       - name: Upload AI Analysis Report
