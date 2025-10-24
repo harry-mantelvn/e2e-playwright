@@ -8,8 +8,48 @@ import sys
 def format_analysis_summary(analysis_file='analysis-output.json'):
     """Format analysis output as markdown for GitHub Actions"""
     try:
+        # Check if file exists and has content
+        import os
+        if not os.path.exists(analysis_file):
+            print("❌ **Error**: Analysis file not found")
+            print("")
+            print("The AI analysis did not generate an output file.")
+            print("Please check the analysis step logs for errors.")
+            return
+        
+        # Check file size
+        file_size = os.path.getsize(analysis_file)
+        if file_size == 0:
+            print("❌ **Error**: Analysis file is empty")
+            print("")
+            print("The AI analysis step completed but generated no output.")
+            print("This may indicate:")
+            print("- API rate limiting")
+            print("- Network connectivity issues")
+            print("- Invalid GITHUB_TOKEN")
+            print("")
+            print("Please check the analysis-debug.log for details.")
+            return
+        
+        # Try to load JSON
         with open(analysis_file) as f:
-            data = json.load(f)
+            content = f.read()
+            if not content.strip():
+                print("❌ **Error**: Analysis file contains no data")
+                return
+            
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError as je:
+                print(f"❌ **Error**: Invalid JSON in analysis file")
+                print("")
+                print(f"JSON Error: {str(je)}")
+                print("")
+                print("First 200 characters of file:")
+                print("```")
+                print(content[:200])
+                print("```")
+                return
         
         # Handle both old and new format
         summary = data.get('summary', data.get('executive_summary', {}))

@@ -286,15 +286,15 @@ Provide analysis in JSON format with this structure:
                 "actionable_recommendations": ai_analysis.get('immediate_actions', []) + ai_analysis.get('long_term_recommendations', [])[:3]
             }
         else:
-            print(f"⚠️  GitHub Models API error: {response.status_code}")
-            print(f"Response: {response.text}")
+            print(f"⚠️  GitHub Models API error: {response.status_code}", file=sys.stderr)
+            print(f"Response: {response.text}", file=sys.stderr)
             return create_fallback_analysis(failures)
             
     except ImportError:
-        print("⚠️  'requests' library not installed, using fallback analysis")
+        print("⚠️  'requests' library not installed, using fallback analysis", file=sys.stderr)
         return create_fallback_analysis(failures)
     except Exception as e:
-        print(f"⚠️  AI analysis error: {e}")
+        print(f"⚠️  AI analysis error: {e}", file=sys.stderr)
         return create_fallback_analysis(failures)
 
 def analyze_failure_details(failure):
